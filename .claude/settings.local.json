@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Select-Object FullName)",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"D:\\\\HK4\\\\LTDD\\\\MinLish_Source_Files\\\\seed_data\")"
+    ]
+  }
+}

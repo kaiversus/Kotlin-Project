@@ -1,0 +1,282 @@
+{
+  "sets": [
+    {
+      "name": "IELTS Academic - Core Vocabulary",
+      "description": "100 từ học thuật quan trọng nhất cho IELTS Academic",
+      "words": [
+        {
+          "word": "meticulous",
+          "pronunciation": "/məˈtɪk.jə.ləs/",
+          "meaning": "Tỉ mỉ, cẩn thận đến từng chi tiết",
+          "description": "Showing great attention to detail or being very careful and precise",
+          "exampleSentence": "She was meticulous in her research, checking every source twice.",
+          "collocation": "meticulous attention, meticulous planning, meticulous records",
+          "relatedWords": "precise, thorough, careful, painstaking",
+          "note": "Thường dùng để miêu tả người làm việc cẩn thận"
+        },
+        {
+          "word": "ambiguous",
+          "pronunciation": "/æmˈbɪɡ.ju.əs/",
+          "meaning": "Mơ hồ, có thể hiểu theo nhiều nghĩa",
+          "description": "Having more than one possible meaning; not clear or decided",
+          "exampleSentence": "The instructions were ambiguous, so we were unsure what to do.",
+          "collocation": "ambiguous statement, remain ambiguous, deeply ambiguous",
+          "relatedWords": "vague, unclear, equivocal, obscure",
+          "note": "Danh từ: ambiguity"
+        },
+        {
+          "word": "substantial",
+          "pronunciation": "/səbˈstæn.ʃəl/",
+          "meaning": "Đáng kể, lớn, quan trọng",
+          "description": "Large in size, value, or importance",
+          "exampleSentence": "There has been a substantial increase in the number of students.",
+          "collocation": "substantial evidence, substantial amount, substantial progress",
+          "relatedWords": "significant, considerable, notable, major",
+          "note": "Trái nghĩa: insignificant, negligible"
+        },
+        {
+          "word": "subsequently",
+          "pronunciation": "/ˈsʌb.sɪ.kwənt.li/",
+          "meaning": "Sau đó, tiếp theo",
+          "description": "Happening after something else; afterwards",
+          "exampleSentence": "He was subsequently promoted to manager.",
+          "collocation": "subsequently discovered, subsequently published",
+          "relatedWords": "afterwards, later, thereafter, following",
+          "note": "Formal word, thường dùng trong văn viết học thuật"
+        },
+        {
+          "word": "unprecedented",
+          "pronunciation": "/ʌnˈpres.ɪ.den.tɪd/",
+          "meaning": "Chưa từng có tiền lệ, chưa từng xảy ra trước đây",
+          "description": "Never having happened or existed before",
+          "exampleSentence": "The pandemic caused an unprecedented economic crisis.",
+          "collocation": "unprecedented growth, unprecedented scale, unprecedented demand",
+          "relatedWords": "unparalleled, unheard-of, novel, extraordinary",
+          "note": "Rất phổ biến trong IELTS Writing Task 2"
+        },
+        {
+          "word": "advocate",
+          "pronunciation": "/ˈæd.və.keɪt/",
+          "meaning": "Ủng hộ, bênh vực; người ủng hộ",
+          "description": "To publicly support or recommend a cause or policy (v); a person who supports a cause (n)",
+          "exampleSentence": "She advocates for stricter environmental regulations.",
+          "collocation": "advocate for, strong advocate, advocate change",
+          "relatedWords": "support, champion, promote, proponent",
+          "note": "Vừa là động từ vừa là danh từ"
+        },
+        {
+          "word": "coherent",
+          "pronunciation": "/kəʊˈhɪə.rənt/",
+          "meaning": "Mạch lạc, logic, nhất quán",
+          "description": "Logical and consistent; easy to understand",
+          "exampleSentence": "The essay lacks a coherent argument.",
+          "collocation": "coherent argument, coherent plan, coherent strategy",
+          "relatedWords": "logical, consistent, clear, structured",
+          "note": "Danh từ: coherence — quan trọng trong IELTS Writing"
+        },
+        {
+          "word": "deteriorate",
+          "pronunciation": "/dɪˈtɪə.ri.ə.reɪt/",
+          "meaning": "Suy giảm, tệ đi, xấu đi",
+          "description": "To become progressively worse",
+          "exampleSentence": "His health began to deteriorate rapidly.",
+          "collocation": "deteriorate rapidly, deteriorate further, continue to deteriorate",
+          "relatedWords": "worsen, decline, degrade, weaken",
+          "note": "Trái nghĩa: improve, ameliorate"
+        },
+        {
+          "word": "implications",
+          "pronunciation": "/ˌɪm.plɪˈkeɪ.ʃənz/",
+          "meaning": "Hàm ý, tác động, hệ quả",
+          "description": "The possible effects or results of an action or decision",
+          "exampleSentence": "We need to consider the implications of this policy.",
+          "collocation": "serious implications, wider implications, have implications for",
+          "relatedWords": "consequences, effects, ramifications, repercussions",
+          "note": "Thường dùng số nhiều"
+        },
+        {
+          "word": "mitigate",
+          "pronunciation": "/ˈmɪt.ɪ.ɡeɪt/",
+          "meaning": "Giảm nhẹ, làm dịu bớt",
+          "description": "To make something less harmful, serious, or painful",
+          "exampleSentence": "Steps must be taken to mitigate the effects of climate change.",
+          "collocation": "mitigate risk, mitigate the impact, mitigate damage",
+          "relatedWords": "reduce, lessen, alleviate, diminish",
+          "note": "Hay xuất hiện trong IELTS Writing về môi trường"
+        }
+      ]
+    },
+    {
+      "name": "Business English - Workplace",
+      "description": "Từ vựng tiếng Anh thương mại trong môi trường công sở",
+      "words": [
+        {
+          "word": "synergy",
+          "pronunciation": "/ˈsɪn.ə.dʒi/",
+          "meaning": "Sự phối hợp cộng lực, hiệp lực",
+          "description": "The combined effect of two things working together, greater than the sum of their parts",
+          "exampleSentence": "The merger created a synergy between the two companies.",
+          "collocation": "create synergy, synergy between, potential synergy",
+          "relatedWords": "collaboration, cooperation, integration",
+          "note": "Buzzword phổ biến trong môi trường kinh doanh"
+        },
+        {
+          "word": "leverage",
+          "pronunciation": "/ˈliː.vər.ɪdʒ/",
+          "meaning": "Tận dụng lợi thế; đòn bẩy",
+          "description": "To use something to maximum advantage; power or ability to influence",
+          "exampleSentence": "We need to leverage our existing customer base.",
+          "collocation": "leverage data, leverage technology, leverage resources",
+          "relatedWords": "utilize, exploit, capitalize on",
+          "note": "Rất phổ biến trong văn phong kinh doanh"
+        },
+        {
+          "word": "proactive",
+          "pronunciation": "/ˌprəʊˈæk.tɪv/",
+          "meaning": "Chủ động, tiên liệu",
+          "description": "Taking action by causing change rather than reacting to events",
+          "exampleSentence": "We need to be proactive in addressing customer complaints.",
+          "collocation": "proactive approach, proactive measure, be proactive about",
+          "relatedWords": "initiative, forward-thinking, anticipatory",
+          "note": "Trái nghĩa: reactive"
+        },
+        {
+          "word": "streamline",
+          "pronunciation": "/ˈstriːm.laɪn/",
+          "meaning": "Đơn giản hóa, tối ưu hóa quy trình",
+          "description": "To make an organization or system more efficient by simplifying procedures",
+          "exampleSentence": "We streamlined the hiring process to reduce time.",
+          "collocation": "streamline operations, streamline process, streamline workflow",
+          "relatedWords": "simplify, optimize, improve efficiency",
+          "note": "Thường dùng khi nói về cải tiến quy trình"
+        },
+        {
+          "word": "benchmark",
+          "pronunciation": "/ˈbentʃ.mɑːk/",
+          "meaning": "Tiêu chuẩn so sánh, chuẩn mực",
+          "description": "A standard or point of reference used for comparison or measurement",
+          "exampleSentence": "This project will serve as a benchmark for future initiatives.",
+          "collocation": "set a benchmark, industry benchmark, benchmark against",
+          "relatedWords": "standard, reference point, criterion",
+          "note": "Cũng dùng như động từ: to benchmark something"
+        },
+        {
+          "word": "scalable",
+          "pronunciation": "/ˈskeɪ.lə.bəl/",
+          "meaning": "Có khả năng mở rộng",
+          "description": "Able to be changed in size or scale; adaptable to growth",
+          "exampleSentence": "We need a scalable solution that can grow with the business.",
+          "collocation": "scalable solution, scalable model, scalable infrastructure",
+          "relatedWords": "expandable, flexible, adaptable",
+          "note": "Rất phổ biến trong lĩnh vực công nghệ và startup"
+        },
+        {
+          "word": "stakeholder",
+          "pronunciation": "/ˈsteɪkˌhəʊl.dər/",
+          "meaning": "Các bên liên quan, người có lợi ích",
+          "description": "A person with an interest or concern in a business or project",
+          "exampleSentence": "We must consider all stakeholders before making a decision.",
+          "collocation": "key stakeholder, stakeholder engagement, stakeholder management",
+          "relatedWords": "shareholder, investor, participant",
+          "note": "Khác với shareholder (cổ đông) — stakeholder rộng hơn"
+        },
+        {
+          "word": "accountability",
+          "pronunciation": "/əˌkaʊn.təˈbɪl.ɪ.ti/",
+          "meaning": "Trách nhiệm giải trình",
+          "description": "The fact of being responsible for your decisions and actions",
+          "exampleSentence": "There must be greater accountability in government spending.",
+          "collocation": "personal accountability, lack of accountability, hold accountable",
+          "relatedWords": "responsibility, transparency, answerability",
+          "note": "Tính từ: accountable. Hay xuất hiện trong IELTS Task 2"
+        }
+      ]
+    },
+    {
+      "name": "Everyday English - Conversations",
+      "description": "Từ vựng giao tiếp hàng ngày",
+      "words": [
+        {
+          "word": "awkward",
+          "pronunciation": "/ˈɔː.kwəd/",
+          "meaning": "Ngượng ngùng, vụng về, khó xử",
+          "description": "Causing difficulty or embarrassment; not smooth or graceful",
+          "exampleSentence": "There was an awkward silence after his joke.",
+          "collocation": "awkward silence, feel awkward, awkward situation",
+          "relatedWords": "embarrassing, uncomfortable, clumsy",
+          "note": "Dùng rất nhiều trong hội thoại hàng ngày"
+        },
+        {
+          "word": "overwhelmed",
+          "pronunciation": "/ˌəʊ.vəˈwelmd/",
+          "meaning": "Bị áp đảo, quá tải, choáng ngợp",
+          "description": "Having too much to deal with; feeling very strong emotion",
+          "exampleSentence": "I felt overwhelmed by the amount of work.",
+          "collocation": "feel overwhelmed, completely overwhelmed, overwhelmed with work",
+          "relatedWords": "swamped, buried, inundated",
+          "note": "Cũng có nghĩa tích cực: overwhelmed with joy"
+        },
+        {
+          "word": "genuine",
+          "pronunciation": "/ˈdʒen.ju.ɪn/",
+          "meaning": "Thật, chân thực, không giả tạo",
+          "description": "Truly what something is said to be; authentic; sincere",
+          "exampleSentence": "She showed genuine concern for her students.",
+          "collocation": "genuine interest, genuine concern, genuine smile",
+          "relatedWords": "authentic, sincere, real, true",
+          "note": "Trái nghĩa: fake, artificial, insincere"
+        },
+        {
+          "word": "spontaneous",
+          "pronunciation": "/spɒnˈteɪ.ni.əs/",
+          "meaning": "Tự phát, bộc phát, không có kế hoạch",
+          "description": "Done or happening naturally, without planning or thought",
+          "exampleSentence": "We made a spontaneous decision to go on a road trip.",
+          "collocation": "spontaneous decision, spontaneous reaction, spontaneous combustion",
+          "relatedWords": "impulsive, unplanned, impromptu",
+          "note": "Mang nghĩa tích cực — tự nhiên, không gò bó"
+        },
+        {
+          "word": "procrastinate",
+          "pronunciation": "/prəˈkræs.tɪ.neɪt/",
+          "meaning": "Trì hoãn, dây dưa, lần lữa",
+          "description": "To delay doing something that should be done",
+          "exampleSentence": "Stop procrastinating and start working on your assignment.",
+          "collocation": "tend to procrastinate, procrastinate on, stop procrastinating",
+          "relatedWords": "delay, postpone, put off, dawdle",
+          "note": "Danh từ: procrastination. Rất quen thuộc với sinh viên 😄"
+        },
+        {
+          "word": "resilient",
+          "pronunciation": "/rɪˈzɪl.i.ənt/",
+          "meaning": "Kiên cường, có khả năng phục hồi",
+          "description": "Able to recover quickly from difficult situations",
+          "exampleSentence": "Children are surprisingly resilient in difficult times.",
+          "collocation": "resilient person, remain resilient, highly resilient",
+          "relatedWords": "tough, adaptable, strong, flexible",
+          "note": "Danh từ: resilience — từ hot trong thời COVID"
+        },
+        {
+          "word": "empathy",
+          "pronunciation": "/ˈem.pə.θi/",
+          "meaning": "Sự đồng cảm, thấu cảm",
+          "description": "The ability to understand and share the feelings of another",
+          "exampleSentence": "Good leaders show empathy toward their team members.",
+          "collocation": "show empathy, lack of empathy, empathy for others",
+          "relatedWords": "compassion, understanding, sympathy",
+          "note": "Khác với sympathy: empathy = cảm nhận cùng, sympathy = thông cảm"
+        },
+        {
+          "word": "sarcastic",
+          "pronunciation": "/sɑːˈkæs.tɪk/",
+          "meaning": "Mỉa mai, châm biếm",
+          "description": "Using remarks that mean the opposite of what you say, typically to mock",
+          "exampleSentence": "\"Oh great, another Monday,\" he said sarcastically.",
+          "collocation": "sarcastic remark, sarcastic tone, sarcastic comment",
+          "relatedWords": "ironic, cynical, mocking, sardonic",
+          "note": "Danh từ: sarcasm. Thường gặp trong phim Mỹ/Anh"
+        }
+      ]
+    }
+  ]
+}
