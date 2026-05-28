@@ -15,6 +15,7 @@
 const admin = require("firebase-admin");
 const serviceAccount = require("./serviceAccountKey.json");
 const data = require("./sample_vocab.json");
+const learningData = require("./sample_learning_records.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -75,7 +76,18 @@ async function seed() {
     }
   }
 
-  console.log("\n🎉 Hoàn thành! Mở app và kiểm tra bộ từ vựng.");
+  // Tạo learning_records mẫu cho trang Learn
+  const learningDocs = learningData.documents || [];
+  for (const record of learningDocs) {
+    const recordData = {
+      ...record,
+      userId: TARGET_USER_ID,
+    };
+    await db.collection("learning_records").doc(record.id).set(recordData);
+  }
+  console.log(`✅ Learning records: ${learningDocs.length} documents`);
+
+  console.log("\n🎉 Hoàn thành! Mở app và kiểm tra Vocab + Learn.");
   process.exit(0);
 }
 

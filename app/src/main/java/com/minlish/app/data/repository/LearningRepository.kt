@@ -92,4 +92,21 @@ class LearningRepository {
         val accuracy = if (totalAnswers > 0) (correct * 100 / totalAnswers) else 0
         return Triple(total, mastered, accuracy)
     }
+
+    suspend fun getDailyPlanStats(userId: String, startOfDay: Long, endOfDay: Long): Pair<Int, Int> {
+        val snapshot = recordsRef.whereEqualTo("userId", userId).get().await()
+        val records = snapshot.toObjects(LearningRecord::class.java)
+
+        val newToday = records.count { record ->
+            val firstLearnedAt = record.firstLearnedAt ?: return@count false
+            firstLearnedAt in startOfDay..endOfDay
+        }
+
+        val reviewToday = records.count { record ->
+            val lastReviewedAt = record.lastReviewedAt ?: return@count false
+            lastReviewedAt in startOfDay..endOfDay
+        }
+
+        return Pair(newToday, reviewToday)
+    }
 }

@@ -3,6 +3,7 @@ package com.minlish.app.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
@@ -18,12 +19,14 @@ import androidx.navigation.navArgument
 import com.minlish.app.ui.auth.LoginScreen
 import com.minlish.app.ui.auth.RegisterScreen
 import com.minlish.app.ui.home.HomeScreen
+import com.minlish.app.ui.learn.LearnScreen
 import com.minlish.app.ui.vocab.AddWordScreen
 import com.minlish.app.ui.vocab.CreateSetScreen
 import com.minlish.app.ui.vocab.FlashcardScreen
 import com.minlish.app.ui.vocab.VocabSetListScreen
 import com.minlish.app.ui.vocab.WordListScreen
 import com.minlish.app.viewmodel.AuthViewModel
+import com.minlish.app.viewmodel.LearnViewModel
 import com.minlish.app.viewmodel.LearningViewModel
 import com.minlish.app.viewmodel.VocabViewModel
 import com.minlish.app.viewmodel.WordViewModel
@@ -60,6 +63,7 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
     val vocabViewModel: VocabViewModel = viewModel()
     val wordViewModel: WordViewModel = viewModel()
     val learningViewModel: LearningViewModel = viewModel()
+    val learnViewModel: LearnViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -71,7 +75,9 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
         NavHost(
             navController = navController,
             startDestination = startDest,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
 
             composable(Routes.LOGIN) {
@@ -123,13 +129,10 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
             }
 
             composable(Routes.LEARN) {
-                VocabSetListScreen(
-                    vocabViewModel = vocabViewModel,
-                    onNavigateBack = { navController.navigate(Routes.HOME) },
-                    onNavigateToWords = { setId, setName ->
-                        navController.navigate(Routes.wordList(setId, setName))
-                    },
-                    onNavigateToCreate = { navController.navigate(Routes.CREATE_SET) }
+                LearnScreen(
+                    displayName = authViewModel.displayName,
+                    learnViewModel = learnViewModel,
+                    onOpenVocab = { navController.navigate(Routes.VOCAB_SETS) }
                 )
             }
 
