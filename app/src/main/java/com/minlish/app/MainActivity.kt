@@ -25,13 +25,18 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val authViewModel: AuthViewModel = viewModel()
-                    val authState by authViewModel.uiState.collectAsState()
+                     val authViewModel: AuthViewModel = viewModel()
+                     val authState by authViewModel.uiState.collectAsState()
 
-                    MinLishNavGraph(
-                        isLoggedIn = authState.isLoggedIn,
-                        authViewModel = authViewModel
-                    )
+                     MinLishNavGraph(
+                         isLoggedIn = authState.isLoggedIn,
+                         authViewModel = authViewModel
+                     )
+
+//                    MinLishNavGraph(
+//                        isLoggedIn = true,
+//                        authViewModel = AuthViewModel()
+//                    )
                 }
             }
         }
