@@ -2,28 +2,46 @@ package com.minlish.app.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.minlish.app.data.model.VocabSet
+import com.minlish.app.data.model.Word
 import com.minlish.app.data.repository.AuthRepository
 import com.minlish.app.data.repository.LearningRepository
 import com.minlish.app.data.repository.UserRepository
+import com.minlish.app.data.repository.VocabSetRepository
+import com.minlish.app.data.repository.WordRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
+enum class DailyPlanListType {
+    NEW, REVIEW
+}
+
 data class LearnUiState(
     val isLoading: Boolean = false,
     val dailyTarget: Int = 10,
-    val newWordsToday: Int = 0,
-    val reviewToday: Int = 0,
+    val completedToday: Int = 0,
+    val plannedNewCount: Int = 0,
+    val plannedReviewCount: Int = 0,
     val progress: Float = 0f,
-    val error: String? = null
+    val error: String? = null,
+    val activeList: DailyPlanListType? = null,
+    val listWords: List<Word> = emptyList(),
+    val listLoading: Boolean = false,
+    val plannedNewWords: List<Word> = emptyList(),
+    val plannedReviewWords: List<Word> = emptyList(),
+    val completedNewWords: List<Word> = emptyList(),
+    val completedReviewWords: List<Word> = emptyList()
 )
 
 class LearnViewModel : ViewModel() {
     private val authRepo = AuthRepository()
     private val userRepo = UserRepository()
     private val learningRepo = LearningRepository()
+    private val setRepo = VocabSetRepository()
+    private val wordRepo = WordRepository()
 
     private val _uiState = MutableStateFlow(LearnUiState(isLoading = true))
     val uiState: StateFlow<LearnUiState> = _uiState.asStateFlow()
@@ -40,16 +58,31 @@ class LearnViewModel : ViewModel() {
                 val user = userRepo.getUser(userId)
                 val dailyTarget = user?.dailyTarget?.coerceAtLeast(1) ?: 10
                 val (startOfDay, endOfDay) = todayRange()
-                val (newToday, reviewToday) = learningRepo.getDailyPlanStats(userId, startOfDay, endOfDay)
-                val completed = newToday + reviewToday
-                val progress = (completed.toFloat() / dailyTarget.toFloat()).coerceIn(0f, 1f)
+                val allWords = getAllUserWords(userId)
 
-                _uiState.value = LearnUiState(
+                val balanced = learningRepo.getBalancedDailyPlan(
+                    userId, allWords, dailyTarget, startOfDay, endOfDay
+                )
+                val completedNewWords = learningRepo.getCompletedNewWordsToday(
+                    userId, allWords, startOfDay, endOfDay
+                )
+                val completedReviewWords = learningRepo.getCompletedReviewWordsToday(
+                    userId, allWords, startOfDay, endOfDay
+                )
+                val completedToday = completedNewWords.size + completedReviewWords.size
+                val progress = (completedToday.toFloat() / dailyTarget.toFloat()).coerceIn(0f, 1f)
+
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     dailyTarget = dailyTarget,
-                    newWordsToday = newToday,
-                    reviewToday = reviewToday,
-                    progress = progress
+                    completedToday = completedToday,
+                    plannedNewCount = balanced.plannedNew.size,
+                    plannedReviewCount = balanced.plannedReview.size,
+                    progress = progress,
+                    plannedNewWords = balanced.plannedNew,
+                    plannedReviewWords = balanced.plannedReview,
+                    completedNewWords = completedNewWords,
+                    completedReviewWords = completedReviewWords
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -58,6 +91,38 @@ class LearnViewModel : ViewModel() {
                 )
             }
         }
+    }
+
+    fun showDailyPlanList(type: DailyPlanListType) {
+        val state = _uiState.value
+        val words = when (type) {
+            DailyPlanListType.NEW -> state.plannedNewWords
+            DailyPlanListType.REVIEW -> state.plannedReviewWords
+        }
+        _uiState.value = state.copy(
+            activeList = type,
+            listWords = words,
+            listLoading = false
+        )
+    }
+
+    fun dismissDailyPlanList() {
+        _uiState.value = _uiState.value.copy(
+            activeList = null,
+            listWords = emptyList(),
+            listLoading = false
+        )
+    }
+
+    suspend fun getFlashcardTarget(): VocabSet? {
+        val userId = authRepo.currentUser?.uid ?: return null
+        val sets = setRepo.getUserSets(userId)
+        return sets.firstOrNull { it.totalWords > 0 } ?: sets.firstOrNull()
+    }
+
+    private suspend fun getAllUserWords(userId: String): List<Word> {
+        val sets = setRepo.getUserSets(userId)
+        return sets.flatMap { set -> wordRepo.getSetWords(set.id) }
     }
 
     private fun todayRange(): Pair<Long, Long> {
