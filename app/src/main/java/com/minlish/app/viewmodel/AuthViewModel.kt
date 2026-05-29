@@ -26,6 +26,9 @@ class AuthViewModel : ViewModel() {
             ?: authRepo.currentUser?.email?.substringBefore("@")
             ?: "Bạn"
 
+    val currentUserId: String
+        get() = authRepo.currentUser?.uid ?: ""
+
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 

@@ -3,6 +3,7 @@ package com.minlish.app.data.repository
 import com.google.firebase.firestore.FirebaseFirestore
 import com.minlish.app.data.model.LearningRecord
 import kotlinx.coroutines.tasks.await
+import java.util.Calendar
 import kotlin.math.max
 
 class LearningRepository {
@@ -108,5 +109,66 @@ class LearningRepository {
         }
 
         return Pair(newToday, reviewToday)
+    }
+
+    suspend fun updateStatsAfterSession(userId: String, newWords: Int, reviewedWords: Int, correct: Int, total: Int) {
+        val calendar = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val todayStart = calendar.timeInMillis
+        val docId = "${userId}_$todayStart"
+        
+        val statsRef = db.collection("daily_stats").document(docId)
+        db.runTransaction { transaction ->
+            val snapshot = transaction.get(statsRef)
+            val currentStats = if (snapshot.exists()) snapshot.toObject(com.minlish.app.data.model.DailyStats::class.java)!! else com.minlish.app.data.model.DailyStats(userId = userId, date = todayStart)
+            
+            val updatedStats = currentStats.copy(
+                newWordsLearned = currentStats.newWordsLearned + newWords,
+                wordsReviewed = currentStats.wordsReviewed + reviewedWords,
+                correctAnswers = currentStats.correctAnswers + correct,
+                totalAnswers = currentStats.totalAnswers + total
+            )
+            transaction.set(statsRef, updatedStats)
+        }.await()
+
+        updateStreak(userId, todayStart)
+    }
+
+    private suspend fun updateStreak(userId: String, todayStart: Long) {
+        val streakRef = db.collection("streaks").document(userId)
+        db.runTransaction { transaction ->
+            val snapshot = transaction.get(streakRef)
+            val streak = if (snapshot.exists()) snapshot.toObject(com.minlish.app.data.model.Streak::class.java)!! else com.minlish.app.data.model.Streak(userId = userId)
+            
+            val lastDate = streak.lastStudyDate
+            
+            // Calculate yesterday's start time using Calendar
+            val calendar = Calendar.getInstance().apply {
+                timeInMillis = todayStart
+                add(Calendar.DAY_OF_YEAR, -1)
+            }
+            val yesterdayStart = calendar.timeInMillis
+            
+            val updatedStreak = when {
+                lastDate == todayStart -> streak // Already updated today
+                lastDate == yesterdayStart -> streak.copy(
+                    currentStreak = streak.currentStreak + 1,
+                    longestStreak = maxOf(streak.longestStreak, streak.currentStreak + 1),
+                    lastStudyDate = todayStart,
+                    totalDaysStudied = streak.totalDaysStudied + 1
+                )
+                else -> streak.copy(
+                    currentStreak = 1,
+                    longestStreak = maxOf(streak.longestStreak, 1),
+                    lastStudyDate = todayStart,
+                    totalDaysStudied = if (lastDate == todayStart) streak.totalDaysStudied else streak.totalDaysStudied + 1
+                )
+            }
+            transaction.set(streakRef, updatedStreak)
+        }.await()
     }
 }

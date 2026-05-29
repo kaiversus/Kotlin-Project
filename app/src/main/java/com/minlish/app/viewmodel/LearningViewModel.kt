@@ -59,17 +59,50 @@ class LearningViewModel : ViewModel() {
 
     fun grade(grade: Int) {
         val record = _state.value.currentRecord ?: return
+        val uid = authRepo.currentUser?.uid ?: return
         viewModelScope.launch {
+            val isNew = record.repetitions == 0
             if (grade >= 2) sessionCorrect++
             learningRepo.updateWithGrade(record, grade)
             currentIndex++
             if (currentIndex >= words.size) {
+                // Session finished, update daily stats
+                val newWords = if (isNew) 1 else 0
+                val reviewedWords = if (isNew) 0 else 1
+                try {
+                    learningRepo.updateStatsAfterSession(
+                        userId = uid,
+                        newWords = newWords,
+                        reviewedWords = reviewedWords,
+                        correct = if (grade >= 2) 1 else 0,
+                        total = 1
+                    )
+                } catch (e: Exception) {
+                    // Ignore stats update errors to prevent crash
+                }
+                
                 _state.value = _state.value.copy(
                     isFinished = true,
                     progress = words.size,
                     correctCount = sessionCorrect
                 )
             } else {
+                // If not finished, we still might want to update stats per card or at the end.
+                // For simplicity, let's update per card for now or batch them.
+                // Let's do per card for immediate feedback on Stats screen if user leaves early.
+                val newWords = if (isNew) 1 else 0
+                val reviewedWords = if (isNew) 0 else 1
+                try {
+                    learningRepo.updateStatsAfterSession(
+                        userId = uid,
+                        newWords = newWords,
+                        reviewedWords = reviewedWords,
+                        correct = if (grade >= 2) 1 else 0,
+                        total = 1
+                    )
+                } catch (e: Exception) {
+                    // Ignore
+                }
                 showCard()
             }
         }
