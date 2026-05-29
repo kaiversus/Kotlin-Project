@@ -15,7 +15,7 @@
 const admin = require("firebase-admin");
 const serviceAccount = require("./serviceAccountKey.json");
 const data = require("./sample_vocab.json");
-const learningData = require("./sample_learning_records.json");
+const dailyPlanData = require("./sample_daily_plan_timeline.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -27,6 +27,8 @@ const db = admin.firestore();
 // Thay bằng UID của tài khoản bạn đã đăng ký trên app
 // Lấy UID: Firebase Console → Authentication → Users → copy cột "User UID"
 const TARGET_USER_ID = "j6YuOWYdf8gOSUmKrzNP92mh72N2";
+// snapshot = test hôm nay (29/05), full = trạng thái cuối timeline (07/06)
+const SEED_MODE = "snapshot";
 // ==========================
 
 async function seed() {
@@ -37,8 +39,9 @@ async function seed() {
 
   console.log(`\n🚀 Bắt đầu tạo dữ liệu mẫu cho user: ${TARGET_USER_ID}\n`);
 
+  const firstSetWordIds = [];
+
   for (const set of data.sets) {
-    // Tạo vocab set
     const setRef = db.collection("vocab_sets").doc();
     const setData = {
       id: setRef.id,
@@ -55,7 +58,6 @@ async function seed() {
     await setRef.set(setData);
     console.log(`✅ Bộ từ: "${set.name}" (${set.words.length} từ)`);
 
-    // Tạo từng từ trong bộ
     for (const word of set.words) {
       const wordRef = db.collection("words").doc();
       await wordRef.set({
@@ -72,22 +74,71 @@ async function seed() {
         note: word.note || null,
         createdAt: Date.now(),
       });
+      if (firstSetWordIds.length < 10) {
+        firstSetWordIds.push(wordRef.id);
+      }
       console.log(`   + ${word.word}`);
     }
   }
 
-  // Tạo learning_records mẫu cho trang Learn
-  const learningDocs = learningData.documents || [];
-  for (const record of learningDocs) {
-    const recordData = {
-      ...record,
-      userId: TARGET_USER_ID,
-    };
-    await db.collection("learning_records").doc(record.id).set(recordData);
-  }
-  console.log(`✅ Learning records: ${learningDocs.length} documents`);
+  // Cập nhật dailyTarget cho user
+  await db.collection("users").doc(TARGET_USER_ID).set(
+    {
+      dailyTarget: dailyPlanData.meta.dailyTarget || 10,
+    },
+    { merge: true }
+  );
+  console.log(`✅ User dailyTarget = ${dailyPlanData.meta.dailyTarget || 10}`);
 
-  console.log("\n🎉 Hoàn thành! Mở app và kiểm tra Vocab + Learn.");
+  // Seed daily_stats (29/05 -> 07/06)
+  const dailyStats = dailyPlanData.dailyStats || [];
+  for (const stats of dailyStats) {
+    await db.collection("daily_stats").doc(stats.id).set({
+      ...stats,
+      userId: TARGET_USER_ID,
+    });
+  }
+  console.log(`✅ Daily stats: ${dailyStats.length} ngày (29/05 - 07/06)`);
+
+  // Seed learning_records theo timeline
+  const recordSource =
+    SEED_MODE === "full"
+      ? dailyPlanData.fullTimelineEndState
+      : dailyPlanData.snapshotAsOfReferenceDate;
+
+  for (const record of recordSource) {
+    const wordId = firstSetWordIds[record.wordIndex];
+    if (!wordId) {
+      console.warn(`⚠️  Bỏ qua record ${record.id}: không map được wordIndex ${record.wordIndex}`);
+      continue;
+    }
+
+    await db.collection("learning_records").doc(record.id).set({
+      id: record.id,
+      userId: TARGET_USER_ID,
+      wordId,
+      status: record.status,
+      easeFactor: record.easeFactor,
+      interval: record.interval,
+      repetitions: record.repetitions,
+      nextReviewDate: record.nextReviewDate,
+      lastGrade: record.lastGrade,
+      totalReviews: record.totalReviews,
+      correctReviews: record.correctReviews,
+      firstLearnedAt: record.firstLearnedAt,
+      lastReviewedAt: record.lastReviewedAt,
+    });
+  }
+  console.log(`✅ Learning records (${SEED_MODE}): ${recordSource.length} documents`);
+
+  const expected = dailyPlanData.expectedOnReferenceDate;
+  console.log("\n📊 Kỳ vọng trên Learn (reference 29/05):");
+  console.log(`   - New today: ${expected.newWordsToday}`);
+  console.log(`   - Review today: ${expected.reviewToday}`);
+  console.log(`   - Progress: ${expected.progressPercentWithTarget10}%`);
+  console.log(`   - Flashcard queue indices: ${expected.flashcardQueueWordIndices.join(", ")}`);
+
+  console.log("\n🎉 Hoàn thành! Mở app và kiểm tra Vocab + Learn + Flashcard.");
   process.exit(0);
 }
 
