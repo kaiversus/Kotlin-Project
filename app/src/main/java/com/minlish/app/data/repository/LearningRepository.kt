@@ -2,6 +2,8 @@ package com.minlish.app.data.repository
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.minlish.app.data.model.LearningRecord
+import com.minlish.app.data.model.DailyStats
+import com.minlish.app.data.model.Streak
 import kotlinx.coroutines.tasks.await
 import kotlin.math.max
 
@@ -28,6 +30,14 @@ class LearningRepository {
     suspend fun updateWithGrade(record: LearningRecord, grade: Int): LearningRecord {
         val updated = applySM2(record, grade)
         recordsRef.document(record.id).set(updated).await()
+        
+        try {
+            updateDailyStatsForReview(record.userId, record.repetitions == 0 && grade >= 1, grade >= 2)
+            updateStreakAfterReview(record.userId)
+        } catch (e: Exception) {
+            // Silence stats error to ensure learning is uninterrupted
+        }
+        
         return updated
     }
 
@@ -91,5 +101,123 @@ class LearningRepository {
         val correct = records.sumOf { it.correctReviews }
         val accuracy = if (totalAnswers > 0) (correct * 100 / totalAnswers) else 0
         return Triple(total, mastered, accuracy)
+    }
+
+    suspend fun getDueRecords(userId: String, limit: Int = 5): List<LearningRecord> {
+        val currentTime = System.currentTimeMillis()
+        val snapshot = recordsRef
+            .whereEqualTo("userId", userId)
+            .get().await()
+        return snapshot.toObjects(LearningRecord::class.java)
+            .filter { it.nextReviewDate <= currentTime }
+            .sortedBy { it.nextReviewDate }
+            .take(limit)
+    }
+
+    suspend fun getDueRecordsCount(userId: String): Int {
+        val currentTime = System.currentTimeMillis()
+        val snapshot = recordsRef
+            .whereEqualTo("userId", userId)
+            .get().await()
+        return snapshot.toObjects(LearningRecord::class.java)
+            .count { it.nextReviewDate <= currentTime }
+    }
+
+    private val statsRef = db.collection("daily_stats")
+    private val streaksRef = db.collection("streaks")
+
+    private fun getTodayStartTimestamp(): Long {
+        val cal = java.util.Calendar.getInstance()
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+        cal.set(java.util.Calendar.MINUTE, 0)
+        cal.set(java.util.Calendar.SECOND, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
+    }
+
+    suspend fun getDailyStats(userId: String): DailyStats {
+        val today = getTodayStartTimestamp()
+        val snapshot = statsRef
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("date", today)
+            .get().await()
+
+        if (!snapshot.isEmpty) {
+            return snapshot.documents[0].toObject(DailyStats::class.java)!!
+        }
+
+        val doc = statsRef.document()
+        val newStats = DailyStats(
+            id = doc.id,
+            userId = userId,
+            date = today,
+            newWordsLearned = 0,
+            wordsReviewed = 0,
+            correctAnswers = 0,
+            totalAnswers = 0,
+            studyMinutes = 0,
+            goalMet = false
+        )
+        doc.set(newStats).await()
+        return newStats
+    }
+
+    private suspend fun updateDailyStatsForReview(userId: String, isNewWord: Boolean, isCorrect: Boolean) {
+        val stats = getDailyStats(userId)
+        val updates = mutableMapOf<String, Any>(
+            "wordsReviewed" to stats.wordsReviewed + 1,
+            "totalAnswers" to stats.totalAnswers + 1,
+            "correctAnswers" to if (isCorrect) stats.correctAnswers + 1 else stats.correctAnswers
+        )
+        if (isNewWord) {
+            updates["newWordsLearned"] = stats.newWordsLearned + 1
+        }
+        statsRef.document(stats.id).update(updates).await()
+    }
+
+    suspend fun getStreak(userId: String): Streak {
+        val snapshot = streaksRef.document(userId).get().await()
+        if (snapshot.exists()) {
+            return snapshot.toObject(Streak::class.java)!!
+        }
+        
+        val newStreak = Streak(
+            userId = userId,
+            currentStreak = 0,
+            longestStreak = 0,
+            lastStudyDate = 0L,
+            totalDaysStudied = 0,
+            freezesUsed = 0
+        )
+        streaksRef.document(userId).set(newStreak).await()
+        return newStreak
+    }
+
+    private suspend fun updateStreakAfterReview(userId: String) {
+        val streak = getStreak(userId)
+        val today = getTodayStartTimestamp()
+        val lastStudy = streak.lastStudyDate
+        
+        if (lastStudy == today) {
+            return
+        }
+        
+        val oneDayMs = 24L * 60 * 60 * 1000
+        val isYesterday = (today - lastStudy) <= oneDayMs
+        
+        val newCurrent = if (isYesterday || lastStudy == 0L) {
+            streak.currentStreak + 1
+        } else {
+            1
+        }
+        
+        val newLongest = maxOf(streak.longestStreak, newCurrent)
+        val newStreak = streak.copy(
+            currentStreak = newCurrent,
+            longestStreak = newLongest,
+            lastStudyDate = today,
+            totalDaysStudied = streak.totalDaysStudied + 1
+        )
+        streaksRef.document(userId).set(newStreak).await()
     }
 }

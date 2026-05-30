@@ -19,6 +19,7 @@ import com.minlish.app.viewmodel.AuthViewModel
 import com.minlish.app.viewmodel.LearningViewModel
 import com.minlish.app.viewmodel.VocabViewModel
 import com.minlish.app.viewmodel.WordViewModel
+import com.minlish.app.viewmodel.HomeViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
 
@@ -46,6 +47,7 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
     val vocabViewModel: VocabViewModel = viewModel()
     val wordViewModel: WordViewModel = viewModel()
     val learningViewModel: LearningViewModel = viewModel()
+    val homeViewModel: HomeViewModel = viewModel()
 
     NavHost(navController = navController, startDestination = startDest) {
 
@@ -76,13 +78,14 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
         composable(Routes.HOME) {
             HomeScreen(
                 authViewModel = authViewModel,
-                vocabViewModel = vocabViewModel,
+                homeViewModel = homeViewModel,
                 onLogout = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.HOME) { inclusive = true }
                     }
                 },
-                onNavigateToSets = { navController.navigate(Routes.VOCAB_SETS) }
+                onNavigateToSets = { navController.navigate(Routes.VOCAB_SETS) },
+                onNavigateToFlashcard = { setId -> navController.navigate(Routes.flashcard(setId)) }
             )
         }
 
