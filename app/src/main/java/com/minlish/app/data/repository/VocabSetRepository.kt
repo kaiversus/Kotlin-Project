@@ -36,4 +36,8 @@ class VocabSetRepository {
     suspend fun deleteSet(setId: String) {
         setsRef.document(setId).delete().await()
     }
+
+    suspend fun updateFavoriteStatus(setId: String, isFavorite: Boolean) {
+        setsRef.document(setId).update("isFavorite", isFavorite).await()
+    }
 }

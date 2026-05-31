@@ -220,4 +220,9 @@ class LearningRepository {
         )
         streaksRef.document(userId).set(newStreak).await()
     }
+
+    suspend fun getAllRecords(userId: String): List<LearningRecord> {
+        val snapshot = recordsRef.whereEqualTo("userId", userId).get().await()
+        return snapshot.toObjects(LearningRecord::class.java)
+    }
 }

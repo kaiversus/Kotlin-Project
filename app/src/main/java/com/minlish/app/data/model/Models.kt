@@ -1,5 +1,7 @@
 package com.minlish.app.data.model
 
+import com.google.firebase.firestore.PropertyName
+
 /**
  * users/{userId}
  * Tài khoản người dùng — xác thực, profile, cài đặt
@@ -13,7 +15,7 @@ data class User(
     val learningGoal: String = "General",   // IELTS / TOEIC / Communication / General
     val dailyTarget: Int = 10,
     val notificationTime: String? = "20:00",
-    val isDarkMode: Boolean = false,
+    @get:PropertyName("isDarkMode") val isDarkMode: Boolean = false,
     val appLanguage: String = "VI",         // VI / EN
     val createdAt: Long = System.currentTimeMillis()
 )
@@ -28,7 +30,7 @@ data class VocabSet(
     val name: String = "",
     val description: String? = null,
     val tags: String = "[]",                // JSON array: ["IELTS","Academic"]
-    val isFavorite: Boolean = false,
+    @get:PropertyName("isFavorite") val isFavorite: Boolean = false,
     val totalWords: Int = 0,                // Cached count
     val learnedWords: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
@@ -144,6 +146,6 @@ data class Notification(
     val userId: String = "",
     val type: String = "DAILY_REMINDER",    // DAILY_REMINDER / REVIEW_DUE / STREAK_RISK
     val scheduledTime: String = "20:00",
-    val isEnabled: Boolean = true,
+    @get:PropertyName("isEnabled") val isEnabled: Boolean = true,
     val workerTag: String? = null
 )
