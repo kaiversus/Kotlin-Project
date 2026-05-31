@@ -67,6 +67,9 @@ dependencies {
     // ======= VIEWMODEL =======
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
+    // ======= WORKMANAGER =======
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
+
     // ======= MATERIAL ICONS EXTENDED =======
     implementation("androidx.compose.material:material-icons-extended")
 

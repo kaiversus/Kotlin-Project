@@ -39,10 +39,10 @@ fun BottomBar(navController: NavController) {
         modifier = Modifier
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .fillMaxWidth(),
-        color = Color(0xFFF5F5F7),
+        color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(24.dp),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp
+        tonalElevation = 8.dp,
+        shadowElevation = 4.dp
     ) {
         val currentRoute = navController.currentBackStackEntryAsState()
             .value
@@ -57,8 +57,8 @@ fun BottomBar(navController: NavController) {
         ) {
             screens.forEach { screen ->
                 val selected = currentRoute == screen.route
-                val selectedColor = Color(0xFF5B4CF0)
-                val unselectedColor = Color(0xFF4B4B5A)
+                val selectedColor = MaterialTheme.colorScheme.primary
+                val unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
 
                 Box(
                     modifier = Modifier

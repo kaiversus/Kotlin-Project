@@ -190,18 +190,21 @@ private fun DailyPlanCard(
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F4FF))
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+        )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Your Daily Plan",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Text(
                 text = "Bạn hoàn thành $completedToday/$dailyTarget mục tiêu hôm nay (${(progress * 100).toInt()}%)",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -230,7 +233,7 @@ private fun DailyPlanCard(
                     .height(8.dp)
                     .clip(RoundedCornerShape(99.dp)),
                 color = MaterialTheme.colorScheme.primary,
-                trackColor = Color(0xFFE3E8FF)
+                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
             )
         }
     }
@@ -241,7 +244,9 @@ private fun PlanStatChip(label: String, value: String, onClick: () -> Unit) {
     Card(
         modifier = Modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE7ECFF))
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+        )
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -256,7 +261,7 @@ private fun PlanStatChip(label: String, value: String, onClick: () -> Unit) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -506,7 +511,7 @@ private fun ModeCard(
         border = CardDefaults.outlinedCardBorder().copy(
             brush = androidx.compose.ui.graphics.SolidColor(
                 if (highlight) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                else Color(0xFFE6E6EE)
+                else MaterialTheme.colorScheme.outlineVariant
             )
         )
     ) {
@@ -523,14 +528,14 @@ private fun ModeCard(
                     .clip(RoundedCornerShape(12.dp))
                     .background(
                         if (highlight) MaterialTheme.colorScheme.primaryContainer
-                        else Color(0xFFF2F4FF)
+                        else MaterialTheme.colorScheme.surfaceVariant
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = if (highlight) MaterialTheme.colorScheme.primary else Color(0xFF596078)
+                    tint = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(

@@ -24,6 +24,8 @@ import com.minlish.app.ui.learn.LearnScreen
 import com.minlish.app.ui.learn.ListeningPracticeScreen
 import com.minlish.app.ui.learn.MultipleChoiceScreen
 import com.minlish.app.ui.learn.TypingPracticeScreen
+import com.minlish.app.ui.profile.ProfileScreen
+import com.minlish.app.ui.stats.StatsScreen
 import com.minlish.app.ui.vocab.AddWordScreen
 import com.minlish.app.ui.vocab.CreateSetScreen
 import com.minlish.app.ui.vocab.FlashcardScreen
@@ -33,7 +35,9 @@ import com.minlish.app.viewmodel.AuthViewModel
 import com.minlish.app.viewmodel.LearnViewModel
 import com.minlish.app.viewmodel.LearningViewModel
 import com.minlish.app.viewmodel.ListeningViewModel
+import com.minlish.app.viewmodel.ProfileViewModel
 import com.minlish.app.viewmodel.QuizViewModel
+import com.minlish.app.viewmodel.StatsViewModel
 import com.minlish.app.viewmodel.TypingViewModel
 import com.minlish.app.viewmodel.VocabViewModel
 import com.minlish.app.viewmodel.WordViewModel
@@ -83,6 +87,8 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
     val listeningViewModel: ListeningViewModel = viewModel()
     val learnViewModel: LearnViewModel = viewModel()
     val homeViewModel: HomeViewModel = viewModel()
+    val statsViewModel: StatsViewModel = viewModel()
+    val profileViewModel: ProfileViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -198,12 +204,16 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
             }
 
             composable(Routes.STATS) {
-                PlaceholderScreen(title = "Stats")
+                StatsScreen(
+                    userId = authViewModel.currentUserId,
+                    viewModel = statsViewModel
+                )
             }
 
             composable(Routes.PROFILE) {
                 ProfileScreen(
-                    displayName = authViewModel.displayName,
+                    userId = authViewModel.currentUserId,
+                    viewModel = profileViewModel,
                     onLogout = {
                         authViewModel.logout()
                         navController.navigate(Routes.LOGIN) {
@@ -302,28 +312,5 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun PlaceholderScreen(title: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "$title screen is coming soon")
-    }
-}
-
-@Composable
-private fun ProfileScreen(
-    displayName: String,
-    onLogout: () -> Unit
-) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "Profile: $displayName")
     }
 }

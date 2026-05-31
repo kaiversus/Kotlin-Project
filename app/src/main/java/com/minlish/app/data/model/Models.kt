@@ -15,7 +15,8 @@ data class User(
     val learningGoal: String = "General",   // IELTS / TOEIC / Communication / General
     val dailyTarget: Int = 10,
     val notificationTime: String? = "20:00",
-    @get:PropertyName("isDarkMode") val isDarkMode: Boolean = false,
+    @get:PropertyName("darkMode") @set:PropertyName("darkMode")
+    var darkMode: Boolean = false,
     val appLanguage: String = "VI",         // VI / EN
     val createdAt: Long = System.currentTimeMillis()
 )
