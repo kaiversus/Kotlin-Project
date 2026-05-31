@@ -28,4 +28,10 @@ class WordRepository {
     suspend fun updateWord(wordId: String, updates: Map<String, Any>) {
         wordsRef.document(wordId).update(updates).await()
     }
+
+    suspend fun getWordsByIds(wordIds: List<String>): List<Word> {
+        if (wordIds.isEmpty()) return emptyList()
+        val snapshot = wordsRef.whereIn("id", wordIds.take(30)).get().await()
+        return snapshot.toObjects(Word::class.java)
+    }
 }

@@ -106,6 +106,7 @@ class LearningViewModel : ViewModel() {
             currentIndex++
             if (currentIndex >= words.size) {
                 finishSession()
+                updateSetWordCounts()
             } else {
                 showCard(_state.value.setName)
             }
@@ -115,6 +116,22 @@ class LearningViewModel : ViewModel() {
     fun previewIntervalLabel(grade: Int): String {
         val record = _state.value.currentRecord ?: return ""
         return learningRepo.formatInterval(learningRepo.previewGrade(record, grade).interval)
+    }
+
+    private suspend fun updateSetWordCounts() {
+        val setId = words.firstOrNull()?.vocabSetId ?: return
+        val uid = authRepo.currentUser?.uid ?: return
+        try {
+            val allSetWords = wordRepo.getSetWords(setId)
+            val records = learningRepo.getAllRecords(uid)
+            val recordMap = records.associateBy { it.wordId }
+            val learnedWordsCount = allSetWords.count { word ->
+                val rec = recordMap[word.id]
+                rec != null && rec.status != "NEW"
+            }
+            setRepo.updateWordCount(setId, allSetWords.size, learnedWordsCount)
+        } catch (_: Exception) {
+        }
     }
 
     private suspend fun finishSession() {

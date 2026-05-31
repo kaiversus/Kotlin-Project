@@ -37,6 +37,7 @@ import com.minlish.app.viewmodel.QuizViewModel
 import com.minlish.app.viewmodel.TypingViewModel
 import com.minlish.app.viewmodel.VocabViewModel
 import com.minlish.app.viewmodel.WordViewModel
+import com.minlish.app.viewmodel.HomeViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
 import kotlinx.coroutines.launch
@@ -81,6 +82,7 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
     val quizViewModel: QuizViewModel = viewModel()
     val listeningViewModel: ListeningViewModel = viewModel()
     val learnViewModel: LearnViewModel = viewModel()
+    val homeViewModel: HomeViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -124,13 +126,14 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
             composable(Routes.HOME) {
                 HomeScreen(
                     authViewModel = authViewModel,
-                    vocabViewModel = vocabViewModel,
+                    homeViewModel = homeViewModel,
                     onLogout = {
                         navController.navigate(Routes.LOGIN) {
                             popUpTo(Routes.HOME) { inclusive = true }
                         }
                     },
-                    onNavigateToSets = { navController.navigate(Routes.VOCAB_SETS) }
+                    onNavigateToSets = { navController.navigate(Routes.VOCAB_SETS) },
+                    onNavigateToFlashcard = { setId -> navController.navigate(Routes.flashcard(setId)) }
                 )
             }
 
