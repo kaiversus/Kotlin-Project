@@ -51,14 +51,21 @@ class StatsViewModel : ViewModel() {
             .launchIn(viewModelScope)
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.update { it.copy(isLoading = true) }
             try {
                 val totalStats = learningRepository.getTotalStats(userId)
-                val rawDailyStats = try { statsRepository.getDailyStats(userId, 7) } catch (e: Exception) { emptyList() }
+                
+                // Fetch activity calculated from records instead of daily_stats collection
+                val rawDailyStats = try { 
+                    learningRepository.getWeeklyActivity(userId)
+                } catch (e: Exception) { 
+                    android.util.Log.e("StatsViewModel", "Error calculating weekly activity", e)
+                    emptyList() 
+                }
                 
                 val (paddedStats, labels) = prepareChartData(rawDailyStats)
 
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     totalWordsLearned = totalStats.first,
                     masteredWords = totalStats.second,
                     accuracy = totalStats.third,
@@ -66,12 +73,12 @@ class StatsViewModel : ViewModel() {
                     dailyStats = paddedStats,
                     dayLabels = labels,
                     isLoading = false
-                )
+                ) }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
+                _uiState.update { it.copy(
                     isLoading = false,
                     error = e.message ?: "Unknown error"
-                )
+                ) }
             }
         }
     }
@@ -88,8 +95,17 @@ class StatsViewModel : ViewModel() {
         val resultLabels = mutableListOf<String>()
         val days = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
         
-        // Create map for easy lookup
-        val statsMap = rawStats.associateBy { it.date }
+        // Create map for easy lookup, normalizing dates to midnight
+        val statsMap = rawStats.associateBy { stats ->
+            val cal = Calendar.getInstance().apply {
+                timeInMillis = stats.date
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            cal.timeInMillis
+        }
         
         // Go back 6 days from today
         calendar.add(Calendar.DAY_OF_YEAR, -6)

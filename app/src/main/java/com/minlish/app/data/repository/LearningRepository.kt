@@ -332,18 +332,15 @@ class LearningRepository {
 
     suspend fun getDailyStats(userId: String): DailyStats {
         val today = getTodayStartTimestamp()
-        val snapshot = statsRef
-            .whereEqualTo("userId", userId)
-            .whereEqualTo("date", today)
-            .get().await()
+        val docId = "${userId}_$today"
+        val doc = statsRef.document(docId).get().await()
 
-        if (!snapshot.isEmpty) {
-            return snapshot.documents[0].toObject(DailyStats::class.java)!!
+        if (doc.exists()) {
+            return doc.toObject(DailyStats::class.java)!!
         }
 
-        val doc = statsRef.document()
         val newStats = DailyStats(
-            id = doc.id,
+            id = docId,
             userId = userId,
             date = today,
             newWordsLearned = 0,
@@ -353,7 +350,7 @@ class LearningRepository {
             studyMinutes = 0,
             goalMet = false
         )
-        doc.set(newStats).await()
+        statsRef.document(docId).set(newStats).await()
         return newStats
     }
 
@@ -422,4 +419,50 @@ class LearningRepository {
     }
 
     suspend fun getAllRecords(userId: String): List<LearningRecord> = getUserRecords(userId)
+
+    suspend fun getWeeklyActivity(userId: String): List<DailyStats> {
+        val records = getUserRecords(userId)
+        val today = getTodayStartTimestamp()
+        
+        val activityMap = mutableMapOf<Long, DailyStats>()
+        
+        // Initialize last 7 days with 0
+        for (i in 0..6) {
+            val cal = java.util.Calendar.getInstance().apply {
+                timeInMillis = today
+                add(java.util.Calendar.DAY_OF_YEAR, -i)
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+            val date = cal.timeInMillis
+            activityMap[date] = DailyStats(date = date, userId = userId)
+        }
+
+        records.forEach { record ->
+            val lastReviewed = record.lastReviewedAt ?: return@forEach
+            val cal = java.util.Calendar.getInstance().apply {
+                timeInMillis = lastReviewed
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+            val date = cal.timeInMillis
+            
+            if (activityMap.containsKey(date)) {
+                val stats = activityMap[date]!!
+                // If repetitions is 1, it was likely first learned on this date
+                val isNew = record.repetitions == 1 && (record.firstLearnedAt ?: 0L) >= date && (record.firstLearnedAt ?: 0L) < (date + 24*60*60*1000)
+                
+                activityMap[date] = stats.copy(
+                    wordsReviewed = if (!isNew) stats.wordsReviewed + 1 else stats.wordsReviewed,
+                    newWordsLearned = if (isNew) stats.newWordsLearned + 1 else stats.newWordsLearned
+                )
+            }
+        }
+
+        return activityMap.values.sortedBy { it.date }
+    }
 }
