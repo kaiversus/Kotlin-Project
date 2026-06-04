@@ -25,7 +25,6 @@ data class TypingState(
     val setName: String = "",
     val userInput: String = "",
     val hintText: String? = null,
-    val highlightedKey: Char? = null,
     val feedback: TypingFeedback? = null,
     val isWrong: Boolean = false,
     val progress: Int = 0,
@@ -97,17 +96,10 @@ class TypingViewModel : ViewModel() {
 
     fun onInputChange(value: String) {
         if (_state.value.feedback != null) return
-        val lastChar = value.lastOrNull()
         _state.value = _state.value.copy(
             userInput = value,
-            highlightedKey = lastChar?.uppercaseChar(),
             isWrong = false
         )
-    }
-
-    fun appendKey(char: Char) {
-        if (_state.value.feedback != null) return
-        onInputChange(_state.value.userInput + char)
     }
 
     fun submitAnswer() {
