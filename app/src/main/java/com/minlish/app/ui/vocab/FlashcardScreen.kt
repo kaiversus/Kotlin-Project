@@ -3,7 +3,6 @@ package com.minlish.app.ui.vocab
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,11 +11,14 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -386,38 +388,41 @@ private fun CardBack(
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = FlashSurfaceContainerLow,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(
-                        width = 0.dp,
-                        color = Color.Transparent,
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
-                        .border(
-                            width = 4.dp,
-                            color = FlashPrimaryContainer,
-                            shape = RoundedCornerShape(4.dp)
-                        )
-                        .padding(start = 12.dp)
+                        .height(IntrinsicSize.Min)
                 ) {
-                    Text(
-                        text = "EXAMPLE SENTENCE",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
-                        color = FlashPrimaryContainer
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .fillMaxHeight()
+                            .padding(vertical = 12.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(FlashPrimaryContainer.copy(alpha = 0.35f))
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "\"${word.exampleSentence}\"",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontStyle = FontStyle.Italic,
-                        color = Color(0xFF0B1C30)
-                    )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 16.dp, vertical = 14.dp)
+                    ) {
+                        Text(
+                            text = "EXAMPLE SENTENCE",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = FlashOnSurfaceVariant,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "\"${word.exampleSentence}\"",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontStyle = FontStyle.Italic,
+                            color = Color(0xFF0B1C30)
+                        )
+                    }
                 }
             }
         }

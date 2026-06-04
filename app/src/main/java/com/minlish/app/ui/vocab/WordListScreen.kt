@@ -1,9 +1,8 @@
 package com.minlish.app.ui.vocab
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,11 +13,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,8 +28,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.minlish.app.data.model.Word
+import com.minlish.app.util.VocabFileFormat
+import com.minlish.app.util.VocabFileIO
 import com.minlish.app.viewmodel.WordItemState
 import com.minlish.app.viewmodel.WordViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,10 +48,13 @@ fun WordListScreen(
 ) {
     val state by wordViewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var deleteTarget by remember { mutableStateOf<String?>(null) }
     var editTarget by remember { mutableStateOf<Word?>(null) }
     var showExportDialog by remember { mutableStateOf(false) }
+    var exportFormat by remember { mutableStateOf(VocabFileFormat.CSV) }
+    var pendingExport by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(setId) {
@@ -83,11 +89,10 @@ fun WordListScreen(
                 },
                 actions = {
                     if (state.wordItems.isNotEmpty()) {
-                        // Nút Xuất tệp CSV
                         IconButton(onClick = { showExportDialog = true }) {
                             Icon(
-                                imageVector = Icons.Default.Share,
-                                contentDescription = "Xuất CSV",
+                                imageVector = Icons.Default.FileDownload,
+                                contentDescription = "Xuất tệp",
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -326,56 +331,118 @@ fun WordListScreen(
         )
     }
 
-    // Hộp thoại xuất tệp CSV (Export Set Dialog)
-    if (showExportDialog) {
-        val csvBuilder = StringBuilder()
-        csvBuilder.append("Word,Pronunciation,Meaning,Description,ExampleSentence\n")
-        state.wordItems.forEach { item ->
-            val w = item.word
-            val escapedWord = w.word.replace("\"", "\"\"")
-            val escapedPron = (w.pronunciation ?: "").replace("\"", "\"\"")
-            val escapedMeaning = w.meaning.replace("\"", "\"\"")
-            val escapedDesc = (w.description ?: "").replace("\"", "\"\"")
-            val escapedExample = (w.exampleSentence ?: "").replace("\"", "\"\"")
-            csvBuilder.append("\"$escapedWord\",\"$escapedPron\",\"$escapedMeaning\",\"$escapedDesc\",\"$escapedExample\"\n")
-        }
-        val csvOutput = csvBuilder.toString()
+    val exportWords = remember(state.wordItems) {
+        state.wordItems.map { it.word }
+    }
 
+    fun handleExportResult(uri: android.net.Uri?, format: VocabFileFormat) {
+        if (uri == null) {
+            pendingExport = false
+            return
+        }
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    VocabFileIO.writeToUri(context, uri, exportWords, format)
+                }
+                Toast.makeText(
+                    context,
+                    "Đã lưu ${exportWords.size} từ vào Files",
+                    Toast.LENGTH_LONG
+                ).show()
+                showExportDialog = false
+            } catch (e: Exception) {
+                Toast.makeText(
+                    context,
+                    e.localizedMessage ?: "Không thể lưu tệp",
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                pendingExport = false
+            }
+        }
+    }
+
+    val saveCsvLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument(VocabFileIO.mimeType(VocabFileFormat.CSV))
+    ) { uri -> handleExportResult(uri, VocabFileFormat.CSV) }
+
+    val saveExcelLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument(VocabFileIO.mimeType(VocabFileFormat.EXCEL))
+    ) { uri -> handleExportResult(uri, VocabFileFormat.EXCEL) }
+
+    LaunchedEffect(pendingExport) {
+        if (!pendingExport) return@LaunchedEffect
+        pendingExport = false
+        val fileName = VocabFileIO.suggestedExportFileName(setName, exportFormat)
+        when (exportFormat) {
+            VocabFileFormat.CSV -> saveCsvLauncher.launch(fileName)
+            VocabFileFormat.EXCEL -> saveExcelLauncher.launch(fileName)
+        }
+    }
+
+    if (showExportDialog) {
         AlertDialog(
-            onDismissRequest = { showExportDialog = false },
-            title = { Text("Xuất bộ từ vựng dạng CSV", fontWeight = FontWeight.Bold) },
+            onDismissRequest = {
+                if (!pendingExport) showExportDialog = false
+            },
+            title = { Text("Xuất bộ từ vựng", fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Dưới đây là văn bản CSV chứa dữ liệu các từ vựng:")
-                    OutlinedTextField(
-                        value = csvOutput,
-                        onValueChange = {},
-                        readOnly = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp),
-                        textStyle = MaterialTheme.typography.bodySmall
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Chọn định dạng và lưu trực tiếp vào ứng dụng Files trên thiết bị.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Text(
+                        text = "${exportWords.size} từ sẽ được xuất",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = exportFormat == VocabFileFormat.CSV,
+                            onClick = { exportFormat = VocabFileFormat.CSV },
+                            label = { Text("CSV") },
+                            enabled = !pendingExport
+                        )
+                        FilterChip(
+                            selected = exportFormat == VocabFileFormat.EXCEL,
+                            onClick = { exportFormat = VocabFileFormat.EXCEL },
+                            label = { Text("Excel (.xlsx)") },
+                            enabled = !pendingExport
+                        )
+                    }
                 }
             },
             confirmButton = {
                 Button(
-                    onClick = {
-                        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = ClipData.newPlainText("Vocab CSV", csvOutput)
-                        clipboardManager.setPrimaryClip(clip)
-                        Toast.makeText(context, "Đã sao chép dữ liệu CSV vào bộ nhớ tạm", Toast.LENGTH_SHORT).show()
-                        showExportDialog = false
-                    }
+                    onClick = { pendingExport = true },
+                    enabled = exportWords.isNotEmpty() && !pendingExport
                 ) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Sao chép")
+                    if (pendingExport) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.FileDownload,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Lưu vào Files")
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showExportDialog = false }) {
-                    Text("Đóng")
+                TextButton(
+                    onClick = { showExportDialog = false },
+                    enabled = !pendingExport
+                ) {
+                    Text("Huỷ")
                 }
             }
         )

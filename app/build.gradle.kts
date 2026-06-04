@@ -76,6 +76,9 @@ dependencies {
     // ======= COROUTINES (cho Firebase .await()) =======
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
 
+    // ======= EXCEL export (import uses SimpleXlsxReader — Android-safe) =======
+    implementation("org.dhatim:fastexcel:0.18.0")
+
     // ======= TEST (giữ nguyên) =======
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

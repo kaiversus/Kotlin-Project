@@ -3,8 +3,11 @@ package com.minlish.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.minlish.app.data.model.VocabSet
+import com.minlish.app.data.model.Word
 import com.minlish.app.data.repository.AuthRepository
 import com.minlish.app.data.repository.VocabSetRepository
+import com.minlish.app.data.repository.WordRepository
+import com.minlish.app.util.VocabImportRow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -133,46 +136,31 @@ class VocabViewModel : ViewModel() {
         }
     }
 
-    fun importCsvToSet(setName: String, setDescription: String, csvText: String, onDone: () -> Unit) {
+    fun importRowsToSet(
+        setName: String,
+        setDescription: String,
+        rows: List<VocabImportRow>,
+        onDone: () -> Unit
+    ) {
         val uid = currentUserId
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                // 1. Parse CSV
-                val lines = csvText.split("\n")
-                val wordsToImport = mutableListOf<com.minlish.app.data.model.Word>()
-                for (line in lines) {
-                    val parts = line.split(",").map { it.trim() }
-                    if (parts.isEmpty() || parts[0].isBlank()) continue
+                if (rows.isEmpty()) {
+                    throw IllegalArgumentException("Không có từ vựng để nhập.")
+                }
 
-                    val wordText = parts[0]
-                    val pronunciation = parts.getOrNull(1) ?: ""
-                    val meaning = parts.getOrNull(2) ?: ""
-                    val description = parts.getOrNull(3) ?: ""
-                    val example = parts.getOrNull(4) ?: ""
-
-                    wordsToImport.add(
-                        com.minlish.app.data.model.Word(
-                            word = wordText,
-                            pronunciation = pronunciation.takeIf { it.isNotBlank() },
-                            meaning = meaning,
-                            description = description.takeIf { it.isNotBlank() },
-                            exampleSentence = example.takeIf { it.isNotBlank() }
-                        )
+                val wordsToImport = rows.map { row ->
+                    Word(
+                        word = row.word,
+                        pronunciation = row.pronunciation,
+                        meaning = row.meaning,
+                        description = row.description,
+                        exampleSentence = row.exampleSentence
                     )
                 }
 
-                if (wordsToImport.isEmpty()) {
-                    throw Exception("Không tìm thấy từ vựng hợp lệ trong nội dung CSV. Hãy đảm bảo phân tách bằng dấu phẩy.")
-                }
-
-                // 2. Tự động xác định Tag
-                val detectedTag = when {
-                    setName.lowercase().contains("ielts") -> "[\"IELTS\"]"
-                    setName.lowercase().contains("business") || setName.lowercase().contains("workplace") || setName.lowercase().contains("thương mại") -> "[\"Business\"]"
-                    setName.lowercase().contains("travel") || setName.lowercase().contains("tourist") || setName.lowercase().contains("du lịch") -> "[\"Travel\"]"
-                    else -> "[]"
-                }
+                val detectedTag = detectTagsFromName(setName)
 
                 val newSet = VocabSet(
                     userId = uid,
@@ -183,8 +171,7 @@ class VocabViewModel : ViewModel() {
                 )
                 val newSetId = setRepo.createSet(newSet)
 
-                // 3. Thêm các từ vựng vào bộ từ
-                val wordRepo = com.minlish.app.data.repository.WordRepository()
+                val wordRepo = WordRepository()
                 for (w in wordsToImport) {
                     wordRepo.addWord(w.copy(vocabSetId = newSetId))
                 }
@@ -195,6 +182,17 @@ class VocabViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.localizedMessage)
             }
         }
+    }
+
+    private fun detectTagsFromName(name: String): String = when {
+        name.lowercase().contains("ielts") -> "[\"IELTS\"]"
+        name.lowercase().contains("business") ||
+            name.lowercase().contains("workplace") ||
+            name.lowercase().contains("thương mại") -> "[\"Business\"]"
+        name.lowercase().contains("travel") ||
+            name.lowercase().contains("tourist") ||
+            name.lowercase().contains("du lịch") -> "[\"Travel\"]"
+        else -> "[]"
     }
 
     fun deleteSet(setId: String) {

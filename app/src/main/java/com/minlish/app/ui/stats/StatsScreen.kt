@@ -213,7 +213,7 @@ fun ActivityChartSection(dailyStats: List<DailyStats>, labels: List<String>) {
 
 @Composable
 fun SimpleBarChart(dailyStats: List<DailyStats>, labels: List<String>) {
-    val maxWords = dailyStats.maxOfOrNull { it.newWordsLearned + it.wordsReviewed }?.coerceAtLeast(10) ?: 10
+    val maxWords = dailyStats.maxOfOrNull { maxOf(it.newWordsLearned, it.wordsReviewed) }?.coerceAtLeast(10) ?: 10
     val primaryColor = MaterialTheme.colorScheme.primary
     val secondaryColor = MaterialTheme.colorScheme.secondary
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -222,8 +222,10 @@ fun SimpleBarChart(dailyStats: List<DailyStats>, labels: List<String>) {
         Canvas(modifier = Modifier
             .weight(1f)
             .fillMaxWidth()) {
-            val barWidth = size.width / (dailyStats.size * 2f)
-            val spaceBetween = size.width / (dailyStats.size * 2f)
+            val totalWidth = size.width
+            val groupWidth = totalWidth / dailyStats.size
+            val barWidth = groupWidth * 0.35f // Each bar takes 35% of group width
+            val spacing = 2.dp.toPx() // Small space between side-by-side bars
             
             // Draw horizontal grid lines
             val gridLines = 4
@@ -238,26 +240,24 @@ fun SimpleBarChart(dailyStats: List<DailyStats>, labels: List<String>) {
             }
 
             dailyStats.forEachIndexed { index, stats ->
-                val total = stats.newWordsLearned + stats.wordsReviewed
-                val barHeight = (total.toFloat() / maxWords) * size.height
+                val groupCenterX = index * groupWidth + groupWidth / 2
                 
-                val x = index * (barWidth + spaceBetween) + spaceBetween / 2
-                val y = size.height - barHeight
-                
-                // Draw review words part
-                val reviewHeight = (stats.wordsReviewed.toFloat() / maxWords) * size.height
-                drawRect(
-                    color = secondaryColor.copy(alpha = 0.7f),
-                    topLeft = Offset(x, size.height - reviewHeight),
-                    size = androidx.compose.ui.geometry.Size(barWidth, reviewHeight)
-                )
-
-                // Draw new words part on top
+                // 1. New Words Bar (Left of center)
                 val newWordsHeight = (stats.newWordsLearned.toFloat() / maxWords) * size.height
+                val newWordsX = groupCenterX - barWidth - spacing / 2
                 drawRect(
                     color = primaryColor,
-                    topLeft = Offset(x, y),
+                    topLeft = Offset(newWordsX, size.height - newWordsHeight),
                     size = androidx.compose.ui.geometry.Size(barWidth, newWordsHeight)
+                )
+
+                // 2. Review Words Bar (Right of center)
+                val reviewWordsHeight = (stats.wordsReviewed.toFloat() / maxWords) * size.height
+                val reviewWordsX = groupCenterX + spacing / 2
+                drawRect(
+                    color = secondaryColor,
+                    topLeft = Offset(reviewWordsX, size.height - reviewWordsHeight),
+                    size = androidx.compose.ui.geometry.Size(barWidth, reviewWordsHeight)
                 )
             }
         }
@@ -266,34 +266,43 @@ fun SimpleBarChart(dailyStats: List<DailyStats>, labels: List<String>) {
         
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceAround
         ) {
             labels.forEach { label ->
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelSmall,
                     color = labelColor,
-                    modifier = Modifier.width(32.dp),
+                    modifier = Modifier.weight(1f),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }
         
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         
-        // Legend
-        Row(
+        // Legend with explanation
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Box(Modifier.size(8.dp).background(primaryColor, RoundedCornerShape(2.dp)))
-            Spacer(Modifier.width(4.dp))
-            Text("New", style = MaterialTheme.typography.labelSmall)
-            Spacer(Modifier.width(16.dp))
-            Box(Modifier.size(8.dp).background(secondaryColor.copy(alpha = 0.7f), RoundedCornerShape(2.dp)))
-            Spacer(Modifier.width(4.dp))
-            Text("Review", style = MaterialTheme.typography.labelSmall)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(12.dp).background(primaryColor, RoundedCornerShape(2.dp)))
+                    Spacer(Modifier.width(6.dp))
+                    Text("New words learned", style = MaterialTheme.typography.labelMedium)
+                }
+                Spacer(Modifier.width(24.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(12.dp).background(secondaryColor, RoundedCornerShape(2.dp)))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Words reviewed", style = MaterialTheme.typography.labelMedium)
+                }
+            }
         }
     }
 }

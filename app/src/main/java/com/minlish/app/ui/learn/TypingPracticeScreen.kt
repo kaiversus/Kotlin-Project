@@ -4,8 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -78,12 +76,6 @@ private val TypingOnSurfaceVariant = Color(0xFF464555)
 private val TypingOutlineVariant = Color(0xFFC7C4D8)
 private val TypingOutline = Color(0xFF777587)
 
-private val KeyboardRows = listOf(
-    "QWERTYUIOP",
-    "ASDFGHJKL",
-    "ZXCVBNM"
-)
-
 @Composable
 fun TypingPracticeScreen(
     setId: String,
@@ -147,13 +139,11 @@ fun TypingPracticeScreen(
                         userInput = state.userInput,
                         hintText = state.hintText,
                         isWrong = state.isWrong,
-                        highlightedKey = state.highlightedKey,
                         focusRequester = focusRequester,
                         onInputChange = typingViewModel::onInputChange,
                         onSubmit = typingViewModel::submitAnswer,
                         onHint = typingViewModel::showHint,
-                        onSkip = typingViewModel::skipWord,
-                        onKeyPress = typingViewModel::appendKey
+                        onSkip = typingViewModel::skipWord
                     )
                 }
             }
@@ -220,13 +210,11 @@ private fun TypingContent(
     userInput: String,
     hintText: String?,
     isWrong: Boolean,
-    highlightedKey: Char?,
     focusRequester: FocusRequester,
     onInputChange: (String) -> Unit,
     onSubmit: () -> Unit,
     onHint: () -> Unit,
-    onSkip: () -> Unit,
-    onKeyPress: (Char) -> Unit
+    onSkip: () -> Unit
 ) {
     val definition = word.description?.takeIf { it.isNotBlank() } ?: word.meaning
     val isMatch = userInput.trim().equals(word.word, ignoreCase = true)
@@ -364,14 +352,7 @@ private fun TypingContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        VisualKeyboard(
-            highlightedKey = highlightedKey,
-            onKeyPress = onKeyPress
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = "Press ENTER to verify",
             style = MaterialTheme.typography.labelSmall,
@@ -391,71 +372,6 @@ private fun TagChip(label: String) {
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             style = MaterialTheme.typography.labelSmall,
             color = TypingOnSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun VisualKeyboard(
-    highlightedKey: Char?,
-    onKeyPress: (Char) -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = TypingSurfaceContainer,
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(24.dp))
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            KeyboardRows.forEach { row ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Spacer(modifier = Modifier.weight(1f))
-                    row.forEach { key ->
-                        KeyboardKey(
-                            key = key,
-                            isHighlighted = highlightedKey == key,
-                            onClick = { onKeyPress(key.lowercaseChar()) }
-                        )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun KeyboardKey(
-    key: Char,
-    isHighlighted: Boolean,
-    onClick: () -> Unit
-) {
-    val bg = if (isHighlighted) TypingPrimaryContainer else Color.White
-    val fg = if (isHighlighted) Color.White else TypingOnSurfaceVariant
-
-    Box(
-        modifier = Modifier
-            .size(width = 30.dp, height = 36.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(bg)
-            .border(1.dp, Color(0x11000000), RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = key.toString(),
-            fontWeight = FontWeight.Bold,
-            fontSize = 12.sp,
-            color = fg
         )
     }
 }

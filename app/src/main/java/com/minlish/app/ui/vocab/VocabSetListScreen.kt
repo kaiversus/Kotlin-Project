@@ -1,5 +1,10 @@
 package com.minlish.app.ui.vocab
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -25,11 +30,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.minlish.app.util.VocabFileIO
+import com.minlish.app.util.VocabImportRow
 import com.minlish.app.viewmodel.VocabViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,12 +50,22 @@ fun VocabSetListScreen(
     onNavigateToCreate: () -> Unit
 ) {
     val state by vocabViewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     var deleteTarget by remember { mutableStateOf<String?>(null) }
     var showImportDialog by remember { mutableStateOf(false) }
     var showCreateOptions by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         vocabViewModel.loadSets()
+    }
+
+    LaunchedEffect(state.error) {
+        state.error?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            vocabViewModel.clearError()
+        }
     }
 
     Scaffold(
@@ -65,7 +85,6 @@ fun VocabSetListScreen(
                     Icon(Icons.Default.Add, contentDescription = "Tạo bộ từ")
                 }
 
-                // Dropdown menu lựa chọn phương thức tạo
                 DropdownMenu(
                     expanded = showCreateOptions,
                     onDismissRequest = { showCreateOptions = false }
@@ -78,8 +97,14 @@ fun VocabSetListScreen(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Nhập hàng loạt từ CSV") },
-                        leadingIcon = { Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        text = { Text("Nhập hàng loạt") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.CloudUpload,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
                         onClick = {
                             showCreateOptions = false
                             showImportDialog = true
@@ -94,7 +119,6 @@ fun VocabSetListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // 1. Thanh tìm kiếm (Search Bar)
             OutlinedTextField(
                 value = state.searchQuery,
                 onValueChange = { vocabViewModel.updateSearchQuery(it) },
@@ -111,7 +135,6 @@ fun VocabSetListScreen(
                 )
             )
 
-            // 2. Bộ lọc phân loại nhanh (Filter Chips Row)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -129,7 +152,6 @@ fun VocabSetListScreen(
                     )
                 }
 
-                // Nút lọc Yêu thích
                 FilterChip(
                     selected = state.showFavoritesOnly,
                     onClick = { vocabViewModel.toggleShowFavoritesOnly(!state.showFavoritesOnly) },
@@ -146,7 +168,6 @@ fun VocabSetListScreen(
                 )
             }
 
-            // 3. Danh sách các bộ từ vựng
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
                     state.isLoading -> {
@@ -178,7 +199,9 @@ fun VocabSetListScreen(
                             items(state.filteredSets) { set ->
                                 Card(
                                     shape = RoundedCornerShape(16.dp),
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onNavigateToWords(set.id, set.name) },
                                     colors = CardDefaults.cardColors(
                                         containerColor = MaterialTheme.colorScheme.surface
                                     ),
@@ -201,11 +224,13 @@ fun VocabSetListScreen(
                                                         fontWeight = FontWeight.Bold,
                                                         style = MaterialTheme.typography.titleMedium
                                                     )
-                                                    
-                                                    // Hiển thị nhãn Tag của bộ từ nếu có
+
                                                     if (set.tags != "[]") {
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        val cleanTags = set.tags.replace("[", "").replace("]", "").replace("\"", "")
+                                                        val cleanTags = set.tags
+                                                            .replace("[", "")
+                                                            .replace("]", "")
+                                                            .replace("\"", "")
                                                         SuggestionChip(
                                                             onClick = {},
                                                             label = { Text(cleanTags, fontSize = 9.sp) },
@@ -225,7 +250,6 @@ fun VocabSetListScreen(
                                                 }
                                             }
 
-                                            // Nút Trái tim Yêu thích
                                             IconButton(
                                                 onClick = {
                                                     vocabViewModel.toggleFavorite(set.id, !set.isFavorite)
@@ -241,7 +265,6 @@ fun VocabSetListScreen(
 
                                         Spacer(modifier = Modifier.height(14.dp))
 
-                                        // Hiển thị thanh tiến độ học tập (Progress Bar)
                                         val total = set.totalWords
                                         val learned = set.learnedWords
                                         val progress = if (total > 0) learned.toFloat() / total else 0f
@@ -322,7 +345,6 @@ fun VocabSetListScreen(
         }
     }
 
-    // Hộp thoại Xóa bộ từ
     deleteTarget?.let { setId ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
@@ -340,88 +362,189 @@ fun VocabSetListScreen(
         )
     }
 
-    // Hộp thoại Nhập CSV (Import CSV Dialog)
     if (showImportDialog) {
-        var importName by remember { mutableStateOf("") }
-        var importDesc by remember { mutableStateOf("") }
-        var importCsvText by remember { mutableStateOf("") }
-        var hasError by remember { mutableStateOf(false) }
-
-        AlertDialog(
-            onDismissRequest = { showImportDialog = false },
-            title = { Text("Nhập bộ từ vựng từ CSV", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Định dạng dòng CSV chuẩn:\nTừ,Phiên âm,Nghĩa,Giải nghĩa,Ví dụ\nVí dụ:\nmeticulous,/məˈtɪk/,Tỉ mỉ,Precise,câu ví dụ 1",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    OutlinedTextField(
-                        value = importName,
-                        onValueChange = { importName = it },
-                        label = { Text("Tên bộ từ") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
-                        value = importDesc,
-                        onValueChange = { importDesc = it },
-                        label = { Text("Mô tả bộ từ (tùy chọn)") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    OutlinedTextField(
-                        value = importCsvText,
-                        onValueChange = { importCsvText = it },
-                        label = { Text("Nội dung văn bản CSV") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp),
-                        placeholder = { Text("Nhập hoặc dán văn bản CSV vào đây...") }
-                    )
-
-                    if (hasError) {
-                        Text(
-                            text = "Vui lòng nhập đầy đủ tên bộ từ và dữ liệu CSV",
-                            color = MaterialTheme.colorScheme.error,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
+        BulkImportDialog(
+            isLoading = state.isLoading,
+            onDismiss = { showImportDialog = false },
+            onImport = { name, description, rows ->
+                vocabViewModel.importRowsToSet(
+                    setName = name,
+                    setDescription = description,
+                    rows = rows,
+                    onDone = { showImportDialog = false }
+                )
             },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (importName.isBlank() || importCsvText.isBlank()) {
-                            hasError = true
-                        } else {
-                            hasError = false
-                            vocabViewModel.importCsvToSet(
-                                setName = importName,
-                                setDescription = importDesc,
-                                csvText = importCsvText,
-                                onDone = { showImportDialog = false }
-                            )
-                        }
-                    }
-                ) {
-                    Text("Nhập dữ liệu")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showImportDialog = false }) {
-                    Text("Huỷ")
+            onParseFile = { uri ->
+                withContext(Dispatchers.IO) {
+                    VocabFileIO.parseFromUri(context, uri)
                 }
             }
         )
     }
+}
+
+@Composable
+private fun BulkImportDialog(
+    isLoading: Boolean,
+    onDismiss: () -> Unit,
+    onImport: (name: String, description: String, rows: List<VocabImportRow>) -> Unit,
+    onParseFile: suspend (Uri) -> List<VocabImportRow>
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var importName by remember { mutableStateOf("") }
+    var importDesc by remember { mutableStateOf("") }
+    var selectedFileName by remember { mutableStateOf<String?>(null) }
+    var parsedRows by remember { mutableStateOf<List<VocabImportRow>?>(null) }
+    var isParsing by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        try {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        } catch (_: SecurityException) {
+            // Some providers do not support persistable permission.
+        }
+        scope.launch {
+            isParsing = true
+            errorMessage = null
+            try {
+                val rows = onParseFile(uri)
+                parsedRows = rows
+                selectedFileName = context.contentResolver.query(
+                    uri,
+                    arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+                    null,
+                    null,
+                    null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val index = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (index >= 0) cursor.getString(index) else null
+                    } else null
+                } ?: uri.lastPathSegment ?: "Đã chọn tệp"
+                Toast.makeText(
+                    context,
+                    "Đã đọc ${rows.size} từ từ tệp",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } catch (e: Throwable) {
+                parsedRows = null
+                selectedFileName = null
+                errorMessage = e.message ?: e.javaClass.simpleName ?: "Không thể đọc tệp"
+            } finally {
+                isParsing = false
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = { if (!isLoading) onDismiss() },
+        title = { Text("Nhập bộ từ vựng hàng loạt", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Hỗ trợ tệp CSV hoặc Excel (.xlsx).\nCột: Từ, Phiên âm, Nghĩa, Giải nghĩa, Ví dụ",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                OutlinedTextField(
+                    value = importName,
+                    onValueChange = { importName = it },
+                    label = { Text("Tên bộ từ") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    enabled = !isLoading
+                )
+
+                OutlinedTextField(
+                    value = importDesc,
+                    onValueChange = { importDesc = it },
+                    label = { Text("Mô tả (tùy chọn)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = selectedFileName ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Tệp dữ liệu") },
+                        placeholder = { Text("Chưa chọn tệp") },
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading && !isParsing
+                    )
+                    FilledIconButton(
+                        onClick = {
+                            filePickerLauncher.launch(VocabFileIO.importMimeTypes())
+                        },
+                        enabled = !isLoading && !isParsing
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Chọn tệp")
+                    }
+                }
+
+                if (isParsing) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+
+                errorMessage?.let { message ->
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    when {
+                        importName.isBlank() -> errorMessage = "Vui lòng nhập tên bộ từ"
+                        parsedRows == null -> errorMessage = "Vui lòng chọn tệp CSV hoặc Excel"
+                        else -> {
+                            errorMessage = null
+                            onImport(importName, importDesc, parsedRows!!)
+                        }
+                    }
+                },
+                enabled = !isLoading && !isParsing
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Nhập dữ liệu")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isLoading) {
+                Text("Huỷ")
+            }
+        }
+    )
 }
