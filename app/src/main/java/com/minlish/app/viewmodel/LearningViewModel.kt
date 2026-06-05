@@ -6,7 +6,6 @@ import com.minlish.app.data.model.LearningRecord
 import com.minlish.app.data.model.Word
 import com.minlish.app.data.repository.AuthRepository
 import com.minlish.app.data.repository.LearningRepository
-import com.minlish.app.data.repository.UserRepository
 import com.minlish.app.data.repository.VocabSetRepository
 import com.minlish.app.data.repository.WordRepository
 import java.util.Calendar
@@ -33,7 +32,6 @@ data class FlashcardState(
 class LearningViewModel : ViewModel() {
     private val wordRepo = WordRepository()
     private val setRepo = VocabSetRepository()
-    private val userRepo = UserRepository()
     private val learningRepo = LearningRepository()
     private val authRepo = AuthRepository()
 
@@ -63,20 +61,26 @@ class LearningViewModel : ViewModel() {
                     return@launch
                 }
 
-                val set = setRepo.getSet(setId)
-                val setName = set?.name ?: "Daily Plan"
-                val dailyTarget = userRepo.getUser(uid)?.dailyTarget?.toInt()?.coerceAtLeast(1) ?: 10
+                val setName = setRepo.getSet(setId)?.name ?: "Daily Plan"
                 val (startOfDay, endOfDay) = todayRange()
-                val allWords = if (set != null) {
-                    wordRepo.getSetWords(setId)
+                val allWords = getAllUserWords(uid)
+                val todayWords = learningRepo.getAllWordsStudiedToday(
+                    uid, allWords, startOfDay, endOfDay
+                ).shuffled()
+                val reviewWords = learningRepo.getDailyPlanReviewWords(
+                    uid, allWords, endOfDay
+                ).shuffled()
+
+                if (todayReviewOnly) {
+                    words = todayWords
+                    isTodayReviewSession = true
+                } else if (reviewWords.isNotEmpty()) {
+                    words = reviewWords
+                    isTodayReviewSession = false
                 } else {
-                    getAllUserWords(uid)
+                    words = todayWords
+                    isTodayReviewSession = todayWords.isNotEmpty()
                 }
-                val session = learningRepo.resolveStudySessionWords(
-                    uid, allWords, dailyTarget, startOfDay, endOfDay, todayReviewOnly
-                )
-                words = session.words
-                isTodayReviewSession = session.isTodayReview
 
                 if (words.isEmpty()) {
                     _state.value = buildFinishedState(
@@ -107,11 +111,7 @@ class LearningViewModel : ViewModel() {
         val record = _state.value.currentRecord ?: return
         viewModelScope.launch {
             if (grade >= 2) sessionCorrect++
-            try {
-                learningRepo.updateWithGrade(record, grade)
-            } catch (e: Exception) {
-                // Prevent crash on database failure
-            }
+            learningRepo.updateWithGrade(record, grade)
             currentIndex++
             if (currentIndex >= words.size) {
                 finishSession()
@@ -137,8 +137,8 @@ class LearningViewModel : ViewModel() {
             val learnedWordsCount = allSetWords.count { word ->
                 val rec = recordMap[word.id]
                 rec != null && rec.status != "NEW"
-            }.toLong()
-            setRepo.updateWordCount(setId, allSetWords.size.toLong(), learnedWordsCount)
+            }
+            setRepo.updateWordCount(setId, allSetWords.size.toLong(), learnedWordsCount.toLong())
         } catch (_: Exception) {
         }
     }
