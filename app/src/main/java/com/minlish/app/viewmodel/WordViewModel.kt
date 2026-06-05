@@ -62,8 +62,8 @@ class WordViewModel : ViewModel() {
                 }
 
                 // 4. Cập nhật số lượng từ đã thuộc của bộ từ vựng
-                val totalWordsCount = words.size
-                val learnedWordsCount = wordItems.count { it.record != null && it.record.status != "NEW" }
+                val totalWordsCount = words.size.toLong()
+                val learnedWordsCount = wordItems.count { it.record != null && it.record.status != "NEW" }.toLong()
                 setRepo.updateWordCount(setId, totalWordsCount, learnedWordsCount)
 
                 _uiState.value = WordUiState(
@@ -140,7 +140,7 @@ class WordViewModel : ViewModel() {
     fun deleteWord(wordId: String) {
         viewModelScope.launch {
             try {
-                wordRepo.deleteWord(wordId)
+                wordRepo.deleteWordCascade(wordId)
                 loadWords(currentSetId)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = e.localizedMessage)

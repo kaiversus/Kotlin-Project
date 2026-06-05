@@ -155,7 +155,7 @@ class VocabViewModel : ViewModel() {
                     name = setName.trim(),
                     description = setDescription.trim().takeIf { it.isNotBlank() },
                     tags = detectedTag,
-                    totalWords = wordsToImport.size
+                    totalWords = wordsToImport.size.toLong()
                 )
                 val newSetId = setRepo.createSet(newSet)
 
@@ -186,7 +186,7 @@ class VocabViewModel : ViewModel() {
     fun deleteSet(setId: String) {
         viewModelScope.launch {
             try {
-                setRepo.deleteSet(setId)
+                setRepo.deleteSetCascade(setId)
                 loadSets()
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = e.localizedMessage)

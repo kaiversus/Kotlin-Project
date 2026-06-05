@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.minlish.app.data.model.Word
+import com.minlish.app.data.repository.LearningRepository
 import com.minlish.app.util.VocabFileFormat
 import com.minlish.app.util.VocabFileIO
 import com.minlish.app.viewmodel.WordItemState
@@ -499,6 +500,28 @@ private fun WordCardItem(
                             color = badgeColor,
                             fontWeight = FontWeight.ExtraBold
                         )
+                    }
+
+                    if (record != null && record.status != "NEW") {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        val timeRepo = remember { LearningRepository() }
+                        val timeRemaining = timeRepo.formatTimeRemaining(record.nextReviewDate)
+                        val isDue = timeRemaining == "Cần ôn ngay"
+                        val timeBadgeBg = if (isDue) Color(0xFFFFDAD6) else MaterialTheme.colorScheme.surfaceVariant
+                        val timeBadgeText = if (isDue) Color(0xFFBA1A1A) else MaterialTheme.colorScheme.onSurfaceVariant
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(timeBadgeBg)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = timeRemaining,
+                                fontSize = 8.sp,
+                                color = timeBadgeText,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
 

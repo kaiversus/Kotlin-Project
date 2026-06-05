@@ -51,10 +51,11 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             try {
+                val (startOfDay, endOfDay) = todayRange()
                 // Tải song song các nguồn dữ liệu để tối ưu tốc độ phản hồi
                 val userDeferred = async { userRepo.getUser(uid) }
                 val streakDeferred = async { learningRepo.getStreak(uid) }
-                val dailyStatsDeferred = async { learningRepo.getDailyStats(uid) }
+                val dailyStatsDeferred = async { learningRepo.getDailyPlanStats(uid, startOfDay, endOfDay) }
                 val dueRecordsDeferred = async { learningRepo.getDueRecords(uid, limit = 5) }
                 val dueRecordsCountDeferred = async { learningRepo.getDueRecordsCount(uid) }
                 val totalStatsDeferred = async { learningRepo.getTotalStats(uid) }
@@ -81,10 +82,10 @@ class HomeViewModel : ViewModel() {
                     isLoading = false,
                     user = user,
                     greeting = greeting,
-                    wordsLearnedToday = dailyStats.newWordsLearned + dailyStats.wordsReviewed,
-                    dailyTarget = user?.dailyTarget ?: 10,
+                    wordsLearnedToday = dailyStats.first + dailyStats.second,
+                    dailyTarget = (user?.dailyTarget ?: 10).toInt(),
                     dueWordsCount = dueRecordsCount,
-                    currentStreak = streak.currentStreak,
+                    currentStreak = streak.currentStreak.toInt(),
                     averageAccuracy = totalStats.third,
                     totalLearnedWords = totalStats.first,
                     dueWordsList = dueWords
@@ -104,5 +105,17 @@ class HomeViewModel : ViewModel() {
             in 12..17 -> "Good Afternoon"
             else -> "Good Evening"
         }
+    }
+
+    private fun todayRange(): Pair<Long, Long> {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val start = cal.timeInMillis
+        cal.add(Calendar.DAY_OF_MONTH, 1)
+        val end = cal.timeInMillis - 1
+        return Pair(start, end)
     }
 }

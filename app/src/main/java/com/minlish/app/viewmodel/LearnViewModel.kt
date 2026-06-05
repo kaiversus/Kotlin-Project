@@ -56,7 +56,7 @@ class LearnViewModel : ViewModel() {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
                 val user = userRepo.getUser(userId)
-                val dailyTarget = user?.dailyTarget?.coerceAtLeast(1) ?: 10
+                val dailyTarget = user?.dailyTarget?.toInt()?.coerceAtLeast(1) ?: 10
                 val (startOfDay, endOfDay) = todayRange()
                 val allWords = getAllUserWords(userId)
 
@@ -117,7 +117,7 @@ class LearnViewModel : ViewModel() {
     suspend fun getFlashcardTarget(): VocabSet? {
         val userId = authRepo.currentUser?.uid ?: return null
         val sets = setRepo.getUserSets(userId)
-        return sets.firstOrNull { it.totalWords > 0 } ?: sets.firstOrNull()
+        return sets.firstOrNull { it.totalWords > 0L } ?: sets.firstOrNull()
     }
 
     private suspend fun getAllUserWords(userId: String): List<Word> {

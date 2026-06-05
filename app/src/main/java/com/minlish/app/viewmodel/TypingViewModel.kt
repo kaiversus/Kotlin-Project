@@ -52,6 +52,7 @@ class TypingViewModel : ViewModel() {
     private var sessionCorrect = 0
     private var hintLevel = 0
     private var isTodayReviewSession = false
+    private var hasFailedCurrentWord = false
 
     fun startSession(setId: String) {
         loadSession(setId, todayReviewOnly = false)
@@ -73,7 +74,7 @@ class TypingViewModel : ViewModel() {
 
                 val set = setRepo.getSet(setId)
                 val setName = set?.name ?: "Daily Plan"
-                val dailyTarget = userRepo.getUser(uid)?.dailyTarget?.coerceAtLeast(1) ?: 10
+                val dailyTarget = userRepo.getUser(uid)?.dailyTarget?.toInt()?.coerceAtLeast(1) ?: 10
                 val (startOfDay, endOfDay) = todayRange()
                 val allWords = if (set != null) {
                     wordRepo.getSetWords(setId)
@@ -122,6 +123,7 @@ class TypingViewModel : ViewModel() {
                 correctCount = sessionCorrect
             )
         } else {
+            hasFailedCurrentWord = true
             _state.value = _state.value.copy(isWrong = true)
         }
     }
@@ -130,6 +132,7 @@ class TypingViewModel : ViewModel() {
         val word = _state.value.currentWord ?: return
         if (_state.value.feedback != null) return
 
+        hasFailedCurrentWord = true
         hintLevel = (hintLevel + 1).coerceAtMost(word.word.length)
         val revealed = word.word.take(hintLevel)
         val hidden = "_".repeat((word.word.length - hintLevel).coerceAtLeast(0))
@@ -143,8 +146,13 @@ class TypingViewModel : ViewModel() {
 
     fun continueAfterCorrect() {
         viewModelScope.launch {
-            val record = _state.value.currentRecord ?: return@launch
-            learningRepo.updateWithGrade(record, 2)
+            try {
+                val record = _state.value.currentRecord ?: return@launch
+                val grade = if (hasFailedCurrentWord) 0 else 2
+                learningRepo.updateWithGrade(record, grade)
+            } catch (e: Exception) {
+                // Prevent crash on database failure
+            }
             moveToNext()
         }
     }
@@ -213,6 +221,7 @@ class TypingViewModel : ViewModel() {
     }
 
     private suspend fun showWord(setName: String) {
+        hasFailedCurrentWord = false
         val word = words[currentIndex]
         val uid = authRepo.currentUser?.uid ?: return
         val record = learningRepo.getOrCreateRecord(uid, word.id)

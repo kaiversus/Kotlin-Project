@@ -55,6 +55,7 @@ class ListeningViewModel : ViewModel() {
     private var currentIndex = 0
     private var sessionCorrect = 0
     private var isTodayReviewSession = false
+    private var hasFailedCurrentWord = false
 
     fun startSession(setId: String) {
         loadSession(setId, todayReviewOnly = false)
@@ -75,7 +76,7 @@ class ListeningViewModel : ViewModel() {
 
                 val set = setRepo.getSet(setId)
                 val setName = set?.name ?: "Daily Plan"
-                val dailyTarget = userRepo.getUser(uid)?.dailyTarget?.coerceAtLeast(1) ?: 10
+                val dailyTarget = userRepo.getUser(uid)?.dailyTarget?.toInt()?.coerceAtLeast(1) ?: 10
                 val (startOfDay, endOfDay) = todayRange()
                 val allWords = if (set != null) {
                     wordRepo.getSetWords(setId)
@@ -126,8 +127,13 @@ class ListeningViewModel : ViewModel() {
         when (state.checkResult) {
             QuizCheckResult.CORRECT -> {
                 viewModelScope.launch {
-                    val record = state.currentRecord ?: return@launch
-                    learningRepo.updateWithGrade(record, 2)
+                    try {
+                        val record = state.currentRecord ?: return@launch
+                        val grade = if (hasFailedCurrentWord) 0 else 2
+                        learningRepo.updateWithGrade(record, grade)
+                    } catch (e: Exception) {
+                        // Prevent crash on database failure
+                    }
                     moveToNext()
                 }
             }
@@ -145,6 +151,7 @@ class ListeningViewModel : ViewModel() {
                         correctCount = sessionCorrect
                     )
                 } else {
+                    hasFailedCurrentWord = true
                     _state.value = state.copy(checkResult = QuizCheckResult.WRONG)
                 }
             }
@@ -154,6 +161,7 @@ class ListeningViewModel : ViewModel() {
     fun showHint() {
         val word = _state.value.currentWord ?: return
         if (_state.value.checkResult == QuizCheckResult.CORRECT) return
+        hasFailedCurrentWord = true
         val meaning = word.meaning
         _state.value = _state.value.copy(hintText = meaning)
     }
@@ -230,6 +238,7 @@ class ListeningViewModel : ViewModel() {
     }
 
     private suspend fun showQuestion(setName: String) {
+        hasFailedCurrentWord = false
         val word = words[currentIndex]
         val uid = authRepo.currentUser?.uid ?: return
         val record = learningRepo.getOrCreateRecord(uid, word.id)

@@ -42,6 +42,8 @@ import com.minlish.app.viewmodel.TypingViewModel
 import com.minlish.app.viewmodel.VocabViewModel
 import com.minlish.app.viewmodel.WordViewModel
 import com.minlish.app.viewmodel.HomeViewModel
+import com.minlish.app.viewmodel.VaultViewModel
+import com.minlish.app.ui.vocab.VaultScreen
 import java.net.URLDecoder
 import java.net.URLEncoder
 import kotlinx.coroutines.launch
@@ -61,6 +63,7 @@ object Routes {
     const val TYPING = "typing/{setId}"
     const val QUIZ = "quiz/{setId}"
     const val LISTENING = "listening/{setId}"
+    const val VAULT = "vault"
 
     fun wordList(setId: String, setName: String) =
         "word_list/$setId/${URLEncoder.encode(setName, "UTF-8")}"
@@ -89,6 +92,7 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
     val homeViewModel: HomeViewModel = viewModel()
     val statsViewModel: StatsViewModel = viewModel()
     val profileViewModel: ProfileViewModel = viewModel()
+    val vaultViewModel: VaultViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -139,7 +143,8 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
                         }
                     },
                     onNavigateToSets = { navController.navigate(Routes.VOCAB_SETS) },
-                    onNavigateToFlashcard = { setId -> navController.navigate(Routes.flashcard(setId)) }
+                    onNavigateToFlashcard = { setId -> navController.navigate(Routes.flashcard(setId)) },
+                    onNavigateToVault = { navController.navigate(Routes.VAULT) }
                 )
             }
 
@@ -308,6 +313,14 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
                     setId = setId,
                     displayName = authViewModel.displayName,
                     listeningViewModel = listeningViewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Routes.VAULT) {
+                VaultScreen(
+                    userId = authViewModel.currentUserId,
+                    vaultViewModel = vaultViewModel,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

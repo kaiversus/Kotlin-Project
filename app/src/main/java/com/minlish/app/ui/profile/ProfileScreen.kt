@@ -45,10 +45,10 @@ fun ProfileScreen(
 
     if (showTargetDialog) {
         DailyTargetDialog(
-            initialValue = uiState.user?.dailyTarget ?: 10,
+            initialValue = (uiState.user?.dailyTarget ?: 10L).toInt(),
             onDismiss = { showTargetDialog = false },
             onConfirm = { newTarget ->
-                viewModel.updateUserProfile(userId, mapOf("dailyTarget" to newTarget))
+                viewModel.updateUserProfile(userId, mapOf("dailyTarget" to newTarget.toLong()))
                 showTargetDialog = false
             }
         )
@@ -90,7 +90,7 @@ fun ProfileScreen(
 
                 item {
                     SettingsSection(
-                        dailyTarget = uiState.user?.dailyTarget ?: 10,
+                        dailyTarget = (uiState.user?.dailyTarget ?: 10L).toInt(),
                         isDarkMode = uiState.user?.darkMode ?: false,
                         notificationTime = uiState.user?.notificationTime ?: "20:00",
                         onDailyTargetClick = { showTargetDialog = true },
