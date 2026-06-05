@@ -14,6 +14,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+enum class FlashcardSessionMode {
+    SET,
+    DAILY_PLAN;
+
+    companion object {
+        fun fromRoute(value: String): FlashcardSessionMode =
+            if (value.equals("daily_plan", ignoreCase = true)) DAILY_PLAN else SET
+    }
+}
+
 data class FlashcardState(
     val currentWord: Word? = null,
     val currentRecord: LearningRecord? = null,
@@ -42,16 +52,20 @@ class LearningViewModel : ViewModel() {
     private var currentIndex = 0
     private var sessionCorrect = 0
     private var isTodayReviewSession = false
+    private var sessionMode = FlashcardSessionMode.SET
+    private var currentSetId = ""
 
-    fun startSession(setId: String) {
-        loadSession(setId, todayReviewOnly = false)
+    fun startSession(setId: String, mode: FlashcardSessionMode = FlashcardSessionMode.SET) {
+        currentSetId = setId
+        sessionMode = mode
+        loadSession(todayReviewOnly = false)
     }
 
-    fun startTodayReviewSession(setId: String) {
-        loadSession(setId, todayReviewOnly = true)
+    fun startTodayReviewSession() {
+        loadSession(todayReviewOnly = true)
     }
 
-    private fun loadSession(setId: String, todayReviewOnly: Boolean) {
+    private fun loadSession(todayReviewOnly: Boolean) {
         viewModelScope.launch {
             _state.value = FlashcardState(isLoading = true)
             try {
@@ -61,31 +75,45 @@ class LearningViewModel : ViewModel() {
                     return@launch
                 }
 
-                val setName = setRepo.getSet(setId)?.name ?: "Daily Plan"
+                val setName = when (sessionMode) {
+                    FlashcardSessionMode.SET -> setRepo.getSet(currentSetId)?.name ?: "Bộ từ"
+                    FlashcardSessionMode.DAILY_PLAN -> "Kế hoạch hôm nay"
+                }
                 val (startOfDay, endOfDay) = todayRange()
-                val allWords = getAllUserWords(uid)
-                val todayWords = learningRepo.getAllWordsStudiedToday(
-                    uid, allWords, startOfDay, endOfDay
-                ).shuffled()
-                val reviewWords = learningRepo.getDailyPlanReviewWords(
-                    uid, allWords, endOfDay
-                ).shuffled()
 
-                if (todayReviewOnly) {
-                    words = todayWords
-                    isTodayReviewSession = true
-                } else if (reviewWords.isNotEmpty()) {
-                    words = reviewWords
-                    isTodayReviewSession = false
-                } else {
-                    words = todayWords
-                    isTodayReviewSession = todayWords.isNotEmpty()
+                when (sessionMode) {
+                    FlashcardSessionMode.SET -> {
+                        words = resolveSetSessionWords(
+                            uid, currentSetId, startOfDay, endOfDay, todayReviewOnly
+                        )
+                        isTodayReviewSession = todayReviewOnly
+                    }
+                    FlashcardSessionMode.DAILY_PLAN -> {
+                        val allWords = getAllUserWords(uid)
+                        val todayWords = learningRepo.getAllWordsStudiedToday(
+                            uid, allWords, startOfDay, endOfDay
+                        ).shuffled()
+                        if (todayReviewOnly) {
+                            words = todayWords
+                            isTodayReviewSession = true
+                        } else {
+                            val reviewWords = learningRepo.getDailyPlanReviewWords(
+                                uid, allWords, endOfDay
+                            ).shuffled()
+                            if (reviewWords.isNotEmpty()) {
+                                words = reviewWords
+                                isTodayReviewSession = false
+                            } else {
+                                words = todayWords
+                                isTodayReviewSession = todayWords.isNotEmpty()
+                            }
+                        }
+                    }
                 }
 
                 if (words.isEmpty()) {
                     _state.value = buildFinishedState(
                         uid = uid,
-                        allWords = allWords,
                         startOfDay = startOfDay,
                         endOfDay = endOfDay,
                         setName = setName,
@@ -100,6 +128,21 @@ class LearningViewModel : ViewModel() {
             } catch (_: Exception) {
                 _state.value = FlashcardState(isFinished = true, isLoading = false)
             }
+        }
+    }
+
+    private suspend fun resolveSetSessionWords(
+        uid: String,
+        setId: String,
+        startOfDay: Long,
+        endOfDay: Long,
+        todayReviewOnly: Boolean
+    ): List<Word> {
+        val setWords = wordRepo.getSetWords(setId)
+        return if (todayReviewOnly) {
+            learningRepo.getAllWordsStudiedToday(uid, setWords, startOfDay, endOfDay).shuffled()
+        } else {
+            setWords.shuffled()
         }
     }
 
@@ -128,7 +171,10 @@ class LearningViewModel : ViewModel() {
     }
 
     private suspend fun updateSetWordCounts() {
-        val setId = words.firstOrNull()?.vocabSetId ?: return
+        val setId = when (sessionMode) {
+            FlashcardSessionMode.SET -> currentSetId
+            FlashcardSessionMode.DAILY_PLAN -> words.firstOrNull()?.vocabSetId
+        } ?: return
         val uid = authRepo.currentUser?.uid ?: return
         try {
             val allSetWords = wordRepo.getSetWords(setId)
@@ -151,10 +197,8 @@ class LearningViewModel : ViewModel() {
             return
         }
         val (startOfDay, endOfDay) = todayRange()
-        val allWords = getAllUserWords(uid)
         _state.value = buildFinishedState(
             uid = uid,
-            allWords = allWords,
             startOfDay = startOfDay,
             endOfDay = endOfDay,
             setName = setName,
@@ -165,14 +209,17 @@ class LearningViewModel : ViewModel() {
 
     private suspend fun buildFinishedState(
         uid: String,
-        allWords: List<Word>,
         startOfDay: Long,
         endOfDay: Long,
         setName: String,
         total: Int,
         correct: Int
     ): FlashcardState {
-        val todayWords = learningRepo.getAllWordsStudiedToday(uid, allWords, startOfDay, endOfDay)
+        val scopeWords = when (sessionMode) {
+            FlashcardSessionMode.SET -> wordRepo.getSetWords(currentSetId)
+            FlashcardSessionMode.DAILY_PLAN -> getAllUserWords(uid)
+        }
+        val todayWords = learningRepo.getAllWordsStudiedToday(uid, scopeWords, startOfDay, endOfDay)
         return FlashcardState(
             setName = setName,
             isFinished = true,
@@ -209,6 +256,8 @@ class LearningViewModel : ViewModel() {
         currentIndex = 0
         sessionCorrect = 0
         isTodayReviewSession = false
+        sessionMode = FlashcardSessionMode.SET
+        currentSetId = ""
     }
 
     private suspend fun getAllUserWords(userId: String): List<Word> {

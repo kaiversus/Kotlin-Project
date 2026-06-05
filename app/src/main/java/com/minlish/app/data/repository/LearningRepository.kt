@@ -18,6 +18,7 @@ data class BalancedDailyPlan(
 class LearningRepository {
     private val db = FirebaseFirestore.getInstance()
     private val recordsRef = db.collection("learning_records")
+    private val userRepo = UserRepository()
 
     suspend fun getOrCreateRecord(userId: String, wordId: String): LearningRecord {
         val snapshot = recordsRef
@@ -41,7 +42,7 @@ class LearningRepository {
         
         try {
             updateDailyStatsForReview(record.userId, record.repetitions == 0L && grade >= 1, grade >= 2)
-            updateStreakAfterReview(record.userId)
+            maybeUpdateStreakOnDailyGoalMet(record.userId)
         } catch (e: Exception) {
             // Silence stats error to ensure learning is uninterrupted
         }
@@ -381,6 +382,27 @@ class LearningRepository {
             updates["wordsReviewed"] = stats.wordsReviewed + 1L
         }
         statsRef.document(stats.id).update(updates).await()
+    }
+
+    private fun getTodayEndTimestamp(): Long =
+        getTodayStartTimestamp() + 24L * 60 * 60 * 1000 - 1
+
+    suspend fun isStreakGoalMet(userId: String): Boolean {
+        val dailyTarget = userRepo.getUser(userId)?.dailyTarget?.toInt()?.coerceAtLeast(1) ?: 10
+        val startOfDay = getTodayStartTimestamp()
+        val endOfDay = getTodayEndTimestamp()
+        val (completedNew, _) = getDailyPlanStats(userId, startOfDay, endOfDay)
+        return completedNew >= dailyTarget
+    }
+
+    private suspend fun maybeUpdateStreakOnDailyGoalMet(userId: String) {
+        if (!isStreakGoalMet(userId)) return
+
+        val stats = getDailyStats(userId)
+        if (stats.goalMet) return
+
+        statsRef.document(stats.id).update("goalMet", true).await()
+        updateStreakAfterReview(userId)
     }
 
     suspend fun getStreak(userId: String): Streak {

@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import com.minlish.app.data.model.Word
 import com.minlish.app.ui.learn.WordSpeaker
 import com.minlish.app.viewmodel.LearningViewModel
+import com.minlish.app.viewmodel.FlashcardSessionMode
 
 private val FlashPrimary = Color(0xFF3525CD)
 private val FlashPrimaryContainer = Color(0xFF4F46E5)
@@ -74,6 +75,7 @@ private val FlashOnSurfaceVariant = Color(0xFF464555)
 @Composable
 fun FlashcardScreen(
     setId: String,
+    mode: FlashcardSessionMode,
     displayName: String,
     learningViewModel: LearningViewModel,
     onNavigateBack: () -> Unit
@@ -86,7 +88,7 @@ fun FlashcardScreen(
         onDispose { speaker.shutdown() }
     }
 
-    LaunchedEffect(setId) { learningViewModel.startSession(setId) }
+    LaunchedEffect(setId, mode) { learningViewModel.startSession(setId, mode) }
 
     Column(
         modifier = Modifier
@@ -120,7 +122,7 @@ fun FlashcardScreen(
                     isTodayReviewSession = state.isTodayReviewSession,
                     canReviewToday = state.canReviewToday,
                     todayWordsCount = state.todayWordsCount,
-                    onReviewToday = { learningViewModel.startTodayReviewSession(setId) },
+                    onReviewToday = { learningViewModel.startTodayReviewSession() },
                     onBack = {
                         learningViewModel.reset()
                         onNavigateBack()

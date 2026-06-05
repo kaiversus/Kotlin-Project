@@ -34,6 +34,7 @@ import com.minlish.app.ui.vocab.WordListScreen
 import com.minlish.app.viewmodel.AuthViewModel
 import com.minlish.app.viewmodel.LearnViewModel
 import com.minlish.app.viewmodel.LearningViewModel
+import com.minlish.app.viewmodel.FlashcardSessionMode
 import com.minlish.app.viewmodel.ListeningViewModel
 import com.minlish.app.viewmodel.ProfileViewModel
 import com.minlish.app.viewmodel.QuizViewModel
@@ -59,7 +60,7 @@ object Routes {
     const val CREATE_SET = "create_set"
     const val WORD_LIST = "word_list/{setId}/{setName}"
     const val ADD_WORD = "add_word/{setId}"
-    const val FLASHCARD = "flashcard/{setId}"
+    const val FLASHCARD = "flashcard/{setId}/{mode}"
     const val TYPING = "typing/{setId}"
     const val QUIZ = "quiz/{setId}"
     const val LISTENING = "listening/{setId}"
@@ -68,7 +69,8 @@ object Routes {
     fun wordList(setId: String, setName: String) =
         "word_list/$setId/${URLEncoder.encode(setName, "UTF-8")}"
     fun addWord(setId: String) = "add_word/$setId"
-    fun flashcard(setId: String) = "flashcard/$setId"
+    fun flashcard(setId: String, mode: FlashcardSessionMode = FlashcardSessionMode.SET) =
+        "flashcard/$setId/${mode.name.lowercase()}"
     fun typing(setId: String) = "typing/$setId"
     fun quiz(setId: String) = "quiz/$setId"
     fun listening(setId: String) = "listening/$setId"
@@ -143,7 +145,9 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
                         }
                     },
                     onNavigateToSets = { navController.navigate(Routes.VOCAB_SETS) },
-                    onNavigateToFlashcard = { setId -> navController.navigate(Routes.flashcard(setId)) },
+                    onNavigateToFlashcard = { setId ->
+                        navController.navigate(Routes.flashcard(setId, FlashcardSessionMode.DAILY_PLAN))
+                    },
                     onNavigateToVault = { navController.navigate(Routes.VAULT) }
                 )
             }
@@ -168,7 +172,9 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
                         scope.launch {
                             val target = learnViewModel.getFlashcardTarget()
                             if (target != null) {
-                                navController.navigate(Routes.flashcard(target.id))
+                                navController.navigate(
+                                    Routes.flashcard(target.id, FlashcardSessionMode.DAILY_PLAN)
+                                )
                             } else {
                                 navController.navigate(Routes.VOCAB_SETS)
                             }
@@ -269,11 +275,18 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
 
             composable(
                 route = Routes.FLASHCARD,
-                arguments = listOf(navArgument("setId") { type = NavType.StringType })
+                arguments = listOf(
+                    navArgument("setId") { type = NavType.StringType },
+                    navArgument("mode") { type = NavType.StringType }
+                )
             ) { backStack ->
                 val setId = backStack.arguments?.getString("setId") ?: ""
+                val mode = FlashcardSessionMode.fromRoute(
+                    backStack.arguments?.getString("mode") ?: FlashcardSessionMode.SET.name
+                )
                 FlashcardScreen(
                     setId = setId,
+                    mode = mode,
                     displayName = authViewModel.displayName,
                     learningViewModel = learningViewModel,
                     onNavigateBack = { navController.popBackStack() }
