@@ -85,7 +85,8 @@ fun ListeningPracticeScreen(
     setId: String,
     displayName: String,
     listeningViewModel: ListeningViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToVocab: () -> Unit
 ) {
     val state by listeningViewModel.state.collectAsState()
     val context = LocalContext.current
@@ -135,9 +136,7 @@ fun ListeningPracticeScreen(
                     total = state.total,
                     correct = state.correctCount,
                     isTodayReviewSession = state.isTodayReviewSession,
-                    canReviewToday = state.canReviewToday,
-                    todayWordsCount = state.todayWordsCount,
-                    onReviewToday = { listeningViewModel.startTodayReviewSession(setId) },
+                    onNavigateToVocab = onNavigateToVocab,
                     onBack = {
                         listeningViewModel.reset()
                         onNavigateBack()
@@ -614,9 +613,7 @@ private fun ListeningFinishedScreen(
     total: Int,
     correct: Int,
     isTodayReviewSession: Boolean,
-    canReviewToday: Boolean,
-    todayWordsCount: Int,
-    onReviewToday: () -> Unit,
+    onNavigateToVocab: () -> Unit,
     onBack: () -> Unit
 ) {
     val accuracy = if (total > 0) (correct * 100 / total) else 0
@@ -647,28 +644,17 @@ private fun ListeningFinishedScreen(
                 color = ListenOnSurfaceVariant
             )
         }
-        if (canReviewToday) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Có $todayWordsCount từ hôm nay để ôn lại",
-                style = MaterialTheme.typography.bodyMedium,
-                color = ListenOnSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
         Spacer(modifier = Modifier.height(24.dp))
-        if (canReviewToday) {
-            Button(
-                onClick = onReviewToday,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = ListenPrimaryContainer)
-            ) {
-                Text("Ôn lại từ hôm nay")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = onNavigateToVocab,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = ListenPrimaryContainer)
+        ) {
+            Text("Học từ mới")
         }
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(
             onClick = onBack,
             modifier = Modifier

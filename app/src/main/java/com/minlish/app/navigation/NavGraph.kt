@@ -289,7 +289,12 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
                     mode = mode,
                     displayName = authViewModel.displayName,
                     learningViewModel = learningViewModel,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToVocab = {
+                        navController.navigate(Routes.VOCAB_SETS) {
+                            popUpTo(Routes.HOME)
+                        }
+                    }
                 )
             }
 
@@ -301,7 +306,12 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
                 TypingPracticeScreen(
                     setId = setId,
                     typingViewModel = typingViewModel,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToVocab = {
+                        navController.navigate(Routes.VOCAB_SETS) {
+                            popUpTo(Routes.HOME)
+                        }
+                    }
                 )
             }
 
@@ -314,7 +324,12 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
                     setId = setId,
                     displayName = authViewModel.displayName,
                     quizViewModel = quizViewModel,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToVocab = {
+                        navController.navigate(Routes.VOCAB_SETS) {
+                            popUpTo(Routes.HOME)
+                        }
+                    }
                 )
             }
 
@@ -327,7 +342,12 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
                     setId = setId,
                     displayName = authViewModel.displayName,
                     listeningViewModel = listeningViewModel,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToVocab = {
+                        navController.navigate(Routes.VOCAB_SETS) {
+                            popUpTo(Routes.HOME)
+                        }
+                    }
                 )
             }
 

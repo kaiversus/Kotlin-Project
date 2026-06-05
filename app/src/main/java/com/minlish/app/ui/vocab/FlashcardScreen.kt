@@ -78,7 +78,8 @@ fun FlashcardScreen(
     mode: FlashcardSessionMode,
     displayName: String,
     learningViewModel: LearningViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToVocab: () -> Unit
 ) {
     val state by learningViewModel.state.collectAsState()
     val context = LocalContext.current
@@ -120,9 +121,7 @@ fun FlashcardScreen(
                     total = state.total,
                     correct = state.correctCount,
                     isTodayReviewSession = state.isTodayReviewSession,
-                    canReviewToday = state.canReviewToday,
-                    todayWordsCount = state.todayWordsCount,
-                    onReviewToday = { learningViewModel.startTodayReviewSession() },
+                    onNavigateToVocab = onNavigateToVocab,
                     onBack = {
                         learningViewModel.reset()
                         onNavigateBack()
@@ -567,9 +566,7 @@ private fun FinishedScreen(
     total: Int,
     correct: Int,
     isTodayReviewSession: Boolean,
-    canReviewToday: Boolean,
-    todayWordsCount: Int,
-    onReviewToday: () -> Unit,
+    onNavigateToVocab: () -> Unit,
     onBack: () -> Unit
 ) {
     val accuracy = if (total > 0) (correct * 100 / total) else 0
@@ -597,23 +594,13 @@ private fun FinishedScreen(
                 color = FlashOnSurfaceVariant
             )
         }
-        if (canReviewToday) {
-            Text(
-                text = "Có $todayWordsCount từ hôm nay để ôn lại",
-                style = MaterialTheme.typography.bodyMedium,
-                color = FlashOnSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
         Spacer(modifier = Modifier.height(8.dp))
-        if (canReviewToday) {
-            Button(
-                onClick = onReviewToday,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FlashPrimaryContainer)
-            ) {
-                Text("Ôn lại từ hôm nay")
-            }
+        Button(
+            onClick = onNavigateToVocab,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = FlashPrimaryContainer)
+        ) {
+            Text("Học từ mới")
         }
         OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth().height(52.dp)) {
             Text("Quay về", color = FlashPrimary)
