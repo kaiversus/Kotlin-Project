@@ -61,6 +61,7 @@ class QuizViewModel : ViewModel() {
     private var sessionCorrect = 0
     private var sessionStreak = 0
     private var isTodayReviewSession = false
+    private var hasFailedCurrentWord = false
 
     fun startSession(setId: String) {
         loadSession(setId, todayReviewOnly = false)
@@ -81,7 +82,7 @@ class QuizViewModel : ViewModel() {
 
                 val set = setRepo.getSet(setId)
                 val setName = set?.name ?: "Daily Plan"
-                val dailyTarget = userRepo.getUser(uid)?.dailyTarget?.coerceAtLeast(1) ?: 10
+                val dailyTarget = userRepo.getUser(uid)?.dailyTarget?.toInt()?.coerceAtLeast(1) ?: 10
                 val (startOfDay, endOfDay) = todayRange()
                 val allWords = if (set != null) {
                     wordRepo.getSetWords(setId)
@@ -124,8 +125,13 @@ class QuizViewModel : ViewModel() {
         when (state.checkResult) {
             QuizCheckResult.CORRECT -> {
                 viewModelScope.launch {
-                    val record = state.currentRecord ?: return@launch
-                    learningRepo.updateWithGrade(record, 2)
+                    try {
+                        val record = state.currentRecord ?: return@launch
+                        val grade = if (hasFailedCurrentWord) 0 else 2
+                        learningRepo.updateWithGrade(record, grade)
+                    } catch (e: Exception) {
+                        // Prevent crash on database failure
+                    }
                     moveToNext()
                 }
             }
@@ -146,6 +152,7 @@ class QuizViewModel : ViewModel() {
                     )
                 } else {
                     sessionStreak = 0
+                    hasFailedCurrentWord = true
                     _state.value = state.copy(
                         checkResult = QuizCheckResult.WRONG,
                         streak = 0
@@ -228,6 +235,7 @@ class QuizViewModel : ViewModel() {
     }
 
     private suspend fun showQuestion(setName: String) {
+        hasFailedCurrentWord = false
         val word = words[currentIndex]
         val uid = authRepo.currentUser?.uid ?: return
         val record = learningRepo.getOrCreateRecord(uid, word.id)

@@ -40,7 +40,7 @@ class LearningRepository {
         recordsRef.document(record.id).set(updated).await()
         
         try {
-            updateDailyStatsForReview(record.userId, record.repetitions == 0 && grade >= 1, grade >= 2)
+            updateDailyStatsForReview(record.userId, record.repetitions == 0L && grade >= 1, grade >= 2)
             updateStreakAfterReview(record.userId)
         } catch (e: Exception) {
             // Silence stats error to ensure learning is uninterrupted
@@ -51,10 +51,25 @@ class LearningRepository {
 
     fun previewGrade(record: LearningRecord, grade: Int): LearningRecord = applySM2(record, grade)
 
-    fun formatInterval(days: Int): String = when {
-        days <= 0 -> "< 1m"
-        days == 1 -> "1d"
+    fun formatInterval(days: Long): String = when {
+        days <= 0L -> "< 1m"
+        days == 1L -> "1d"
         else -> "${days}d"
+    }
+
+    fun formatTimeRemaining(nextReviewDate: Long): String {
+        val now = System.currentTimeMillis()
+        if (nextReviewDate <= now) return "Cần ôn ngay"
+        val diffMs = nextReviewDate - now
+        val diffMinutes = diffMs / (60 * 1000)
+        val diffHours = diffMs / (60 * 60 * 1000)
+        val diffDays = diffMs / (24L * 60 * 60 * 1000)
+
+        return when {
+            diffMinutes < 60 -> "${diffMinutes} phút nữa"
+            diffHours < 24 -> "${diffHours} giờ nữa"
+            else -> "${diffDays} ngày nữa"
+        }
     }
 
     // SM-2 algorithm: grade 0=Again 1=Hard 2=Good 3=Easy
@@ -65,23 +80,23 @@ class LearningRepository {
         var repetitions = record.repetitions
 
         if (grade < 1) {
-            repetitions = 0
-            interval = 0
+            repetitions = 0L
+            interval = 0L
         } else {
             ef = max(1.3f, ef + (0.1f - (3 - grade) * (0.08f + (3 - grade) * 0.02f)))
             interval = when (repetitions) {
-                0 -> 1
-                1 -> 4
-                else -> (interval * ef).toInt().coerceAtLeast(interval + 1)
+                0L -> 1L
+                1L -> 4L
+                else -> (interval * ef).toLong().coerceAtLeast(interval + 1L)
             }
             repetitions++
         }
 
         val nextReview = now + interval * 24L * 60 * 60 * 1000
         val status = when {
-            repetitions == 0 -> "LEARNING"
-            interval >= 21  -> "MASTERED"
-            interval >= 4   -> "REVIEW"
+            repetitions == 0L -> "LEARNING"
+            interval >= 21L  -> "MASTERED"
+            interval >= 4L   -> "REVIEW"
             else            -> "LEARNING"
         }
 
@@ -91,9 +106,9 @@ class LearningRepository {
             interval = interval,
             repetitions = repetitions,
             nextReviewDate = nextReview,
-            lastGrade = grade,
-            totalReviews = record.totalReviews + 1,
-            correctReviews = if (grade >= 2) record.correctReviews + 1 else record.correctReviews,
+            lastGrade = grade.toLong(),
+            totalReviews = record.totalReviews + 1L,
+            correctReviews = if (grade >= 2) record.correctReviews + 1L else record.correctReviews,
             firstLearnedAt = record.firstLearnedAt ?: now,
             lastReviewedAt = now
         )
@@ -115,7 +130,7 @@ class LearningRepository {
         val mastered = records.count { it.status == "MASTERED" }
         val totalAnswers = records.sumOf { it.totalReviews }
         val correct = records.sumOf { it.correctReviews }
-        val accuracy = if (totalAnswers > 0) (correct * 100 / totalAnswers) else 0
+        val accuracy = if (totalAnswers > 0L) (correct * 100L / totalAnswers).toInt() else 0
         return Triple(total, mastered, accuracy)
     }
 
@@ -304,7 +319,7 @@ class LearningRepository {
             .whereEqualTo("userId", userId)
             .get().await()
         return snapshot.toObjects(LearningRecord::class.java)
-            .filter { it.nextReviewDate <= currentTime }
+            .filter { it.status != "NEW" && it.nextReviewDate <= currentTime }
             .sortedBy { it.nextReviewDate }
             .take(limit)
     }
@@ -315,7 +330,7 @@ class LearningRepository {
             .whereEqualTo("userId", userId)
             .get().await()
         return snapshot.toObjects(LearningRecord::class.java)
-            .count { it.nextReviewDate <= currentTime }
+            .count { it.status != "NEW" && it.nextReviewDate <= currentTime }
     }
 
     private val statsRef = db.collection("daily_stats")
@@ -357,12 +372,13 @@ class LearningRepository {
     private suspend fun updateDailyStatsForReview(userId: String, isNewWord: Boolean, isCorrect: Boolean) {
         val stats = getDailyStats(userId)
         val updates = mutableMapOf<String, Any>(
-            "wordsReviewed" to stats.wordsReviewed + 1,
-            "totalAnswers" to stats.totalAnswers + 1,
-            "correctAnswers" to if (isCorrect) stats.correctAnswers + 1 else stats.correctAnswers
+            "totalAnswers" to stats.totalAnswers + 1L,
+            "correctAnswers" to if (isCorrect) stats.correctAnswers + 1L else stats.correctAnswers
         )
         if (isNewWord) {
-            updates["newWordsLearned"] = stats.newWordsLearned + 1
+            updates["newWordsLearned"] = stats.newWordsLearned + 1L
+        } else {
+            updates["wordsReviewed"] = stats.wordsReviewed + 1L
         }
         statsRef.document(stats.id).update(updates).await()
     }
@@ -398,9 +414,9 @@ class LearningRepository {
         val isYesterday = (today - lastStudy) <= oneDayMs
         
         val newCurrent = if (isYesterday || lastStudy == 0L) {
-            streak.currentStreak + 1
+            streak.currentStreak + 1L
         } else {
-            1
+            1L
         }
         
         val newLongest = maxOf(streak.longestStreak, newCurrent)
@@ -408,7 +424,7 @@ class LearningRepository {
             currentStreak = newCurrent,
             longestStreak = newLongest,
             lastStudyDate = today,
-            totalDaysStudied = streak.totalDaysStudied + 1
+            totalDaysStudied = streak.totalDaysStudied + 1L
         )
         streaksRef.document(userId).set(newStreak).await()
     }
@@ -454,11 +470,11 @@ class LearningRepository {
             if (activityMap.containsKey(date)) {
                 val stats = activityMap[date]!!
                 // If repetitions is 1, it was likely first learned on this date
-                val isNew = record.repetitions == 1 && (record.firstLearnedAt ?: 0L) >= date && (record.firstLearnedAt ?: 0L) < (date + 24*60*60*1000)
+                val isNew = record.repetitions == 1L && (record.firstLearnedAt ?: 0L) >= date && (record.firstLearnedAt ?: 0L) < (date + 24*60*60*1000)
                 
                 activityMap[date] = stats.copy(
-                    wordsReviewed = if (!isNew) stats.wordsReviewed + 1 else stats.wordsReviewed,
-                    newWordsLearned = if (isNew) stats.newWordsLearned + 1 else stats.newWordsLearned
+                    wordsReviewed = if (!isNew) stats.wordsReviewed + 1L else stats.wordsReviewed,
+                    newWordsLearned = if (isNew) stats.newWordsLearned + 1L else stats.newWordsLearned
                 )
             }
         }

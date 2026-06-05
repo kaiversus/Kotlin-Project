@@ -21,8 +21,17 @@ class WordRepository {
             .sortedBy { it.createdAt }
     }
 
-    suspend fun deleteWord(wordId: String) {
+    suspend fun deleteWordCascade(wordId: String) {
+        val recordsRef = db.collection("learning_records")
+        val recordSnapshot = recordsRef.whereEqualTo("wordId", wordId).get().await()
+        for (doc in recordSnapshot.documents) {
+            doc.reference.delete().await()
+        }
         wordsRef.document(wordId).delete().await()
+    }
+
+    suspend fun deleteWord(wordId: String) {
+        deleteWordCascade(wordId)
     }
 
     suspend fun updateWord(wordId: String, updates: Map<String, Any>) {

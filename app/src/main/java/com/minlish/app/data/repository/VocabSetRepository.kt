@@ -26,15 +26,36 @@ class VocabSetRepository {
         return snapshot.toObject(VocabSet::class.java)
     }
 
-    suspend fun updateWordCount(setId: String, total: Int, learned: Int) {
+    suspend fun updateWordCount(setId: String, total: Long, learned: Long) {
         setsRef.document(setId).update(
             mapOf("totalWords" to total, "learnedWords" to learned,
                 "updatedAt" to System.currentTimeMillis())
         ).await()
     }
 
-    suspend fun deleteSet(setId: String) {
+    suspend fun deleteSetCascade(setId: String) {
+        val wordsRef = db.collection("words")
+        val recordsRef = db.collection("learning_records")
+
+        val wordsSnapshot = wordsRef.whereEqualTo("vocabSetId", setId).get().await()
+        val wordIds = wordsSnapshot.documents.map { it.id }
+
+        for (wordId in wordIds) {
+            val recordSnapshot = recordsRef.whereEqualTo("wordId", wordId).get().await()
+            for (doc in recordSnapshot.documents) {
+                doc.reference.delete().await()
+            }
+        }
+
+        for (doc in wordsSnapshot.documents) {
+            doc.reference.delete().await()
+        }
+
         setsRef.document(setId).delete().await()
+    }
+
+    suspend fun deleteSet(setId: String) {
+        deleteSetCascade(setId)
     }
 
     suspend fun updateFavoriteStatus(setId: String, isFavorite: Boolean) {

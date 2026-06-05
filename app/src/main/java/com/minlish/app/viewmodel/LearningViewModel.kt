@@ -65,7 +65,7 @@ class LearningViewModel : ViewModel() {
 
                 val set = setRepo.getSet(setId)
                 val setName = set?.name ?: "Daily Plan"
-                val dailyTarget = userRepo.getUser(uid)?.dailyTarget?.coerceAtLeast(1) ?: 10
+                val dailyTarget = userRepo.getUser(uid)?.dailyTarget?.toInt()?.coerceAtLeast(1) ?: 10
                 val (startOfDay, endOfDay) = todayRange()
                 val allWords = if (set != null) {
                     wordRepo.getSetWords(setId)
@@ -107,7 +107,11 @@ class LearningViewModel : ViewModel() {
         val record = _state.value.currentRecord ?: return
         viewModelScope.launch {
             if (grade >= 2) sessionCorrect++
-            learningRepo.updateWithGrade(record, grade)
+            try {
+                learningRepo.updateWithGrade(record, grade)
+            } catch (e: Exception) {
+                // Prevent crash on database failure
+            }
             currentIndex++
             if (currentIndex >= words.size) {
                 finishSession()
@@ -133,8 +137,8 @@ class LearningViewModel : ViewModel() {
             val learnedWordsCount = allSetWords.count { word ->
                 val rec = recordMap[word.id]
                 rec != null && rec.status != "NEW"
-            }
-            setRepo.updateWordCount(setId, allSetWords.size, learnedWordsCount)
+            }.toLong()
+            setRepo.updateWordCount(setId, allSetWords.size.toLong(), learnedWordsCount)
         } catch (_: Exception) {
         }
     }

@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,7 +38,8 @@ fun HomeScreen(
     homeViewModel: HomeViewModel,
     onLogout: () -> Unit,
     onNavigateToSets: () -> Unit,
-    onNavigateToFlashcard: (setId: String) -> Unit
+    onNavigateToFlashcard: (setId: String) -> Unit,
+    onNavigateToVault: () -> Unit
 ) {
     val state by homeViewModel.uiState.collectAsState()
     val displayName = authViewModel.displayName
@@ -116,7 +118,8 @@ fun HomeScreen(
                     QuickActionsSection(
                         dueWordsList = state.dueWordsList,
                         onNavigateToSets = onNavigateToSets,
-                        onNavigateToFlashcard = onNavigateToFlashcard
+                        onNavigateToFlashcard = onNavigateToFlashcard,
+                        onNavigateToVault = onNavigateToVault
                     )
 
                     // Mini Stats Section
@@ -281,7 +284,8 @@ private fun DailyProgressCard(
 private fun QuickActionsSection(
     dueWordsList: List<Word>,
     onNavigateToSets: () -> Unit,
-    onNavigateToFlashcard: (setId: String) -> Unit
+    onNavigateToFlashcard: (setId: String) -> Unit,
+    onNavigateToVault: () -> Unit
 ) {
     Column {
         Text(
@@ -319,6 +323,16 @@ private fun QuickActionsSection(
                 description = "Danh sách bộ từ",
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 onClick = onNavigateToSets
+            )
+
+            // Action 3: Vault
+            QuickActionButton(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.Storage,
+                title = "Kho từ vựng",
+                description = "Từ vựng đã học",
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                onClick = onNavigateToVault
             )
         }
     }

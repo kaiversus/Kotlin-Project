@@ -41,8 +41,8 @@ class StatsViewModel : ViewModel() {
         streakJob = statsRepository.getStreakFlow(userId)
             .onEach { streak ->
                 _uiState.update { it.copy(
-                    currentStreak = streak?.currentStreak ?: 0,
-                    longestStreak = streak?.longestStreak ?: 0
+                    currentStreak = (streak?.currentStreak ?: 0L).toInt(),
+                    longestStreak = (streak?.longestStreak ?: 0L).toInt()
                 ) }
             }
             .catch { e ->
