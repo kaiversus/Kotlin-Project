@@ -138,20 +138,9 @@ fun VocabSetListScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val tags = listOf("Tất cả", "IELTS", "Business", "Travel")
-                tags.forEach { tag ->
-                    FilterChip(
-                        selected = state.selectedTag == tag,
-                        onClick = { vocabViewModel.updateSelectedTag(tag) },
-                        label = { Text(tag) },
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                }
-
                 FilterChip(
                     selected = state.showFavoritesOnly,
                     onClick = { vocabViewModel.toggleShowFavoritesOnly(!state.showFavoritesOnly) },

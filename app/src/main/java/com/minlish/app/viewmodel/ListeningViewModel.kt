@@ -73,10 +73,15 @@ class ListeningViewModel : ViewModel() {
                     return@launch
                 }
 
-                val setName = setRepo.getSet(setId)?.name ?: "Daily Plan"
+                val set = setRepo.getSet(setId)
+                val setName = set?.name ?: "Daily Plan"
                 val dailyTarget = userRepo.getUser(uid)?.dailyTarget?.coerceAtLeast(1) ?: 10
                 val (startOfDay, endOfDay) = todayRange()
-                val allWords = getAllUserWords(uid)
+                val allWords = if (set != null) {
+                    wordRepo.getSetWords(setId)
+                } else {
+                    getAllUserWords(uid)
+                }
                 val session = learningRepo.resolveStudySessionWords(
                     uid, allWords, dailyTarget, startOfDay, endOfDay, todayReviewOnly
                 )

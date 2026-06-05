@@ -17,7 +17,6 @@ data class VocabUiState(
     val sets: List<VocabSet> = emptyList(),
     val filteredSets: List<VocabSet> = emptyList(),
     val searchQuery: String = "",
-    val selectedTag: String = "Tất cả",
     val showFavoritesOnly: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -58,10 +57,6 @@ class VocabViewModel : ViewModel() {
         applyFilters()
     }
 
-    fun updateSelectedTag(tag: String) {
-        _uiState.value = _uiState.value.copy(selectedTag = tag)
-        applyFilters()
-    }
 
     fun toggleShowFavoritesOnly(show: Boolean) {
         _uiState.value = _uiState.value.copy(showFavoritesOnly = show)
@@ -81,13 +76,6 @@ class VocabViewModel : ViewModel() {
             }
         }
 
-        // 2. Lọc theo Tag
-        if (state.selectedTag != "Tất cả") {
-            val tagQuery = state.selectedTag.lowercase()
-            filtered = filtered.filter { set ->
-                set.tags.lowercase().contains(tagQuery)
-            }
-        }
 
         // 3. Lọc theo Favorites
         if (state.showFavoritesOnly) {
