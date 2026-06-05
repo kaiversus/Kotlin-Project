@@ -79,7 +79,8 @@ private val TypingOutline = Color(0xFF777587)
 fun TypingPracticeScreen(
     setId: String,
     typingViewModel: TypingViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToVocab: () -> Unit
 ) {
     val state by typingViewModel.state.collectAsState()
     val focusRequester = remember { FocusRequester() }
@@ -123,9 +124,7 @@ fun TypingPracticeScreen(
                         total = state.total,
                         correct = state.correctCount,
                         isTodayReviewSession = state.isTodayReviewSession,
-                        canReviewToday = state.canReviewToday,
-                        todayWordsCount = state.todayWordsCount,
-                        onReviewToday = { typingViewModel.startTodayReviewSession(setId) },
+                        onNavigateToVocab = onNavigateToVocab,
                         onBack = {
                             typingViewModel.reset()
                             onNavigateBack()
@@ -429,9 +428,7 @@ private fun TypingFinishedScreen(
     total: Int,
     correct: Int,
     isTodayReviewSession: Boolean,
-    canReviewToday: Boolean,
-    todayWordsCount: Int,
-    onReviewToday: () -> Unit,
+    onNavigateToVocab: () -> Unit,
     onBack: () -> Unit
 ) {
     val accuracy = if (total > 0) (correct * 100 / total) else 0
@@ -462,28 +459,17 @@ private fun TypingFinishedScreen(
                 color = TypingOutline
             )
         }
-        if (canReviewToday) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Có $todayWordsCount từ hôm nay để ôn lại",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TypingOutline,
-                textAlign = TextAlign.Center
-            )
-        }
         Spacer(modifier = Modifier.height(24.dp))
-        if (canReviewToday) {
-            Button(
-                onClick = onReviewToday,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = TypingPrimaryContainer)
-            ) {
-                Text("Ôn lại từ hôm nay")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = onNavigateToVocab,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = TypingPrimaryContainer)
+        ) {
+            Text("Học từ mới")
         }
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(
             onClick = onBack,
             modifier = Modifier

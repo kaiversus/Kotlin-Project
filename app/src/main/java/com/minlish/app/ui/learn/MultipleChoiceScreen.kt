@@ -71,7 +71,8 @@ fun MultipleChoiceScreen(
     setId: String,
     displayName: String,
     quizViewModel: QuizViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToVocab: () -> Unit
 ) {
     val state by quizViewModel.state.collectAsState()
 
@@ -107,9 +108,7 @@ fun MultipleChoiceScreen(
                     total = state.total,
                     correct = state.correctCount,
                     isTodayReviewSession = state.isTodayReviewSession,
-                    canReviewToday = state.canReviewToday,
-                    todayWordsCount = state.todayWordsCount,
-                    onReviewToday = { quizViewModel.startTodayReviewSession(setId) },
+                    onNavigateToVocab = onNavigateToVocab,
                     onBack = {
                         quizViewModel.reset()
                         onNavigateBack()
@@ -473,9 +472,7 @@ private fun QuizFinishedScreen(
     total: Int,
     correct: Int,
     isTodayReviewSession: Boolean,
-    canReviewToday: Boolean,
-    todayWordsCount: Int,
-    onReviewToday: () -> Unit,
+    onNavigateToVocab: () -> Unit,
     onBack: () -> Unit
 ) {
     val accuracy = if (total > 0) (correct * 100 / total) else 0
@@ -506,28 +503,17 @@ private fun QuizFinishedScreen(
                 color = QuizOnSurfaceVariant
             )
         }
-        if (canReviewToday) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Có $todayWordsCount từ hôm nay để ôn lại",
-                style = MaterialTheme.typography.bodyMedium,
-                color = QuizOnSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
         Spacer(modifier = Modifier.height(24.dp))
-        if (canReviewToday) {
-            Button(
-                onClick = onReviewToday,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = QuizPrimaryContainer)
-            ) {
-                Text("Ôn lại từ hôm nay")
-            }
-            Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = onNavigateToVocab,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = QuizPrimaryContainer)
+        ) {
+            Text("Học từ mới")
         }
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(
             onClick = onBack,
             modifier = Modifier

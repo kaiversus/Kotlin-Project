@@ -90,23 +90,18 @@ class LearningViewModel : ViewModel() {
                     }
                     FlashcardSessionMode.DAILY_PLAN -> {
                         val allWords = getAllUserWords(uid)
-                        val todayWords = learningRepo.getAllWordsStudiedToday(
-                            uid, allWords, startOfDay, endOfDay
-                        ).shuffled()
                         if (todayReviewOnly) {
+                            val todayWords = learningRepo.getAllWordsStudiedToday(
+                                uid, allWords, startOfDay, endOfDay
+                            ).shuffled()
                             words = todayWords
                             isTodayReviewSession = true
                         } else {
                             val reviewWords = learningRepo.getDailyPlanReviewWords(
                                 uid, allWords, endOfDay
                             ).shuffled()
-                            if (reviewWords.isNotEmpty()) {
-                                words = reviewWords
-                                isTodayReviewSession = false
-                            } else {
-                                words = todayWords
-                                isTodayReviewSession = todayWords.isNotEmpty()
-                            }
+                            words = reviewWords
+                            isTodayReviewSession = false
                         }
                     }
                 }

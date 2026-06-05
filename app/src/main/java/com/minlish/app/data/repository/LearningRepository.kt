@@ -229,18 +229,12 @@ class LearningRepository {
         endOfDay: Long,
         todayReviewOnly: Boolean = false
     ): StudySessionWords {
-        val todayWords = getAllWordsStudiedToday(userId, allWords, startOfDay, endOfDay).shuffled()
         if (todayReviewOnly) {
+            val todayWords = getAllWordsStudiedToday(userId, allWords, startOfDay, endOfDay).shuffled()
             return StudySessionWords(words = todayWords, isTodayReview = true)
         }
         val reviewWords = getDailyPlanReviewWords(userId, allWords, endOfDay).shuffled()
-        if (reviewWords.isNotEmpty()) {
-            return StudySessionWords(words = reviewWords, isTodayReview = false)
-        }
-        return StudySessionWords(
-            words = todayWords,
-            isTodayReview = todayWords.isNotEmpty()
-        )
+        return StudySessionWords(words = reviewWords, isTodayReview = false)
     }
 
     fun balanceDailyPlan(
