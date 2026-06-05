@@ -204,7 +204,8 @@ fun MinLishNavGraph(isLoggedIn: Boolean, authViewModel: AuthViewModel) {
                             }
                         }
                     },
-                    onOpenVocab = { navController.navigate(Routes.VOCAB_SETS) }
+                    onOpenVocab = { navController.navigate(Routes.VOCAB_SETS) },
+                    onOpenVault = { navController.navigate(Routes.VAULT) }
                 )
             }
 

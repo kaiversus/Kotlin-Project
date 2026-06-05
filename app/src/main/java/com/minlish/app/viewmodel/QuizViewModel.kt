@@ -84,11 +84,7 @@ class QuizViewModel : ViewModel() {
                 val setName = set?.name ?: "Daily Plan"
                 val dailyTarget = userRepo.getUser(uid)?.dailyTarget?.toInt()?.coerceAtLeast(1) ?: 10
                 val (startOfDay, endOfDay) = todayRange()
-                val allWords = if (set != null) {
-                    wordRepo.getSetWords(setId)
-                } else {
-                    getAllUserWords(uid)
-                }
+                val allWords = getAllUserWords(uid)
                 val session = learningRepo.resolveStudySessionWords(
                     uid, allWords, dailyTarget, startOfDay, endOfDay, todayReviewOnly
                 )

@@ -7,6 +7,7 @@ import com.minlish.app.data.model.Word
 import com.minlish.app.data.repository.AuthRepository
 import com.minlish.app.data.repository.UserRepository
 import com.minlish.app.data.repository.LearningRepository
+import com.minlish.app.data.repository.VocabSetRepository
 import com.minlish.app.data.repository.WordRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,7 @@ class HomeViewModel : ViewModel() {
     private val userRepo = UserRepository()
     private val learningRepo = LearningRepository()
     private val wordRepo = WordRepository()
+    private val setRepo = VocabSetRepository()
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -56,24 +58,19 @@ class HomeViewModel : ViewModel() {
                 val userDeferred = async { userRepo.getUser(uid) }
                 val streakDeferred = async { learningRepo.getStreak(uid) }
                 val dailyStatsDeferred = async { learningRepo.getDailyPlanStats(uid, startOfDay, endOfDay) }
-                val dueRecordsDeferred = async { learningRepo.getDueRecords(uid, limit = 5) }
-                val dueRecordsCountDeferred = async { learningRepo.getDueRecordsCount(uid) }
+                val allWordsDeferred = async { getAllUserWords(uid) }
                 val totalStatsDeferred = async { learningRepo.getTotalStats(uid) }
 
                 val user = userDeferred.await()
                 val streak = streakDeferred.await()
                 val dailyStats = dailyStatsDeferred.await()
-                val dueRecords = dueRecordsDeferred.await()
-                val dueRecordsCount = dueRecordsCountDeferred.await()
+                val allWords = allWordsDeferred.await()
                 val totalStats = totalStatsDeferred.await()
 
-                // Từ danh sách records đến hạn ôn, lấy thông tin chi tiết các Word
-                val dueWordIds = dueRecords.map { it.wordId }
-                val dueWords = if (dueWordIds.isNotEmpty()) {
-                    wordRepo.getWordsByIds(dueWordIds)
-                } else {
-                    emptyList()
-                }
+                // Dùng chung logic với trang Learn để số "từ cần ôn hôm nay" đồng nhất
+                val reviewDueWords = learningRepo.getDailyPlanReviewWords(uid, allWords, endOfDay)
+                val dueWordsCount = reviewDueWords.size
+                val dueWords = reviewDueWords.take(5)
 
                 val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
                 val greeting = getGreetingMessage(hour)
@@ -84,7 +81,7 @@ class HomeViewModel : ViewModel() {
                     greeting = greeting,
                     wordsLearnedToday = dailyStats.first + dailyStats.second,
                     dailyTarget = (user?.dailyTarget ?: 10).toInt(),
-                    dueWordsCount = dueRecordsCount,
+                    dueWordsCount = dueWordsCount,
                     currentStreak = streak.currentStreak.toInt(),
                     averageAccuracy = totalStats.third,
                     totalLearnedWords = totalStats.first,
@@ -97,6 +94,10 @@ class HomeViewModel : ViewModel() {
                 )
             }
         }
+    }
+
+    private suspend fun getAllUserWords(userId: String): List<Word> {
+        return setRepo.getUserSets(userId).flatMap { set -> wordRepo.getSetWords(set.id) }
     }
 
     private fun getGreetingMessage(hour: Int): String {

@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,10 +19,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Quiz
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,7 +36,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -64,7 +68,8 @@ fun LearnScreen(
     onOpenQuiz: () -> Unit,
     onOpenTyping: () -> Unit,
     onOpenListening: () -> Unit,
-    onOpenVocab: () -> Unit
+    onOpenVocab: () -> Unit,
+    onOpenVault: () -> Unit
 ) {
     val state by learnViewModel.uiState.collectAsState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -101,15 +106,26 @@ fun LearnScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         LearnTopBar(displayName = displayName)
-        DailyPlanCard(
-            progress = state.progress,
-            completedToday = state.completedToday,
-            newWords = state.plannedNewCount,
-            reviewWords = state.plannedReviewCount,
-            dailyTarget = state.dailyTarget,
-            onNewWordsClick = { learnViewModel.showDailyPlanList(DailyPlanListType.NEW) },
-            onReviewClick = { learnViewModel.showDailyPlanList(DailyPlanListType.REVIEW) }
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+        ) {
+            ReviewTodayCard(
+                count = state.reviewDueWords.size,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                onClick = { learnViewModel.showDailyPlanList(DailyPlanListType.REVIEW) }
+            )
+            VaultEntryCard(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                onClick = onOpenVault
+            )
+        }
         if (state.error != null) {
             Text(
                 text = state.error ?: "",
@@ -123,10 +139,6 @@ fun LearnScreen(
             onOpenTyping = onOpenTyping,
             onOpenListening = onOpenListening,
             onOpenVocab = onOpenVocab
-        )
-        TodayActivitySection(
-            completedNewWords = state.completedNewWords,
-            completedReviewWords = state.completedReviewWords
         )
         Spacer(modifier = Modifier.height(72.dp))
     }
@@ -179,90 +191,104 @@ private fun LearnTopBar(displayName: String) {
 }
 
 @Composable
-private fun DailyPlanCard(
-    progress: Float,
-    completedToday: Int,
-    newWords: Int,
-    reviewWords: Int,
-    dailyTarget: Int,
-    onNewWordsClick: () -> Unit,
-    onReviewClick: () -> Unit
+private fun ReviewTodayCard(
+    count: Int,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
     Card(
+        modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Cần ôn hôm nay",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
             Text(
-                text = "Your Daily Plan",
-                style = MaterialTheme.typography.titleLarge,
+                text = count.toString(),
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Text(
-                text = "Bạn hoàn thành $completedToday/$dailyTarget mục tiêu hôm nay (${(progress * 100).toInt()}%)",
+                text = "Từ cần ôn hôm nay",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Còn ${newWords + reviewWords} từ trong kế hoạch hôm nay ($newWords mới · $reviewWords ôn)",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PlanStatChip(
-                    label = "New words",
-                    value = newWords.toString(),
-                    onClick = onNewWordsClick
-                )
-                PlanStatChip(
-                    label = "Review",
-                    value = reviewWords.toString(),
-                    onClick = onReviewClick
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(99.dp)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
             )
         }
     }
 }
 
 @Composable
-private fun PlanStatChip(label: String, value: String, onClick: () -> Unit) {
+private fun VaultEntryCard(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     Card(
-        modifier = Modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = androidx.compose.ui.graphics.SolidColor(
+                MaterialTheme.colorScheme.outlineVariant
+            )
         )
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Inventory2,
+                    contentDescription = "Kho từ vựng",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
             Text(
-                text = value,
+                text = "Kho từ vựng",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Xem tất cả từ đã học",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
         }
     }
 }
@@ -275,7 +301,7 @@ private fun DailyPlanWordListSheet(
 ) {
     val title = when (type) {
         DailyPlanListType.NEW -> "Từ mới trong kế hoạch hôm nay"
-        DailyPlanListType.REVIEW -> "Từ ôn trong kế hoạch hôm nay"
+        DailyPlanListType.REVIEW -> "Từ cần ôn hôm nay"
     }
 
     Column(
@@ -355,94 +381,6 @@ private fun DailyPlanWordItem(word: Word) {
                 text = word.meaning,
                 style = MaterialTheme.typography.bodyMedium
             )
-        }
-    }
-}
-
-@Composable
-private fun TodayActivitySection(
-    completedNewWords: List<Word>,
-    completedReviewWords: List<Word>
-) {
-    val allCompleted = buildList {
-        completedNewWords.forEach { add(it to "New") }
-        completedReviewWords.forEach { add(it to "Review") }
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = "Hoạt động hôm nay",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "${allCompleted.size} từ đã học/ôn",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        if (allCompleted.isEmpty()) {
-            Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F4FF))
-            ) {
-                Text(
-                    text = "Chưa có từ nào được học hoặc ôn hôm nay.",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                allCompleted.forEach { (word, tag) ->
-                    TodayActivityWordItem(word = word, tag = tag)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TodayActivityWordItem(word: Word, tag: String) {
-    val tagColor = if (tag == "New") Color(0xFF4F46E5) else Color(0xFF006A61)
-    val tagBg = if (tag == "New") Color(0xFFE2DFFF) else Color(0xFF86F2E4)
-
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F4FF))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = word.word,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = word.meaning,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Surface(
-                shape = RoundedCornerShape(999.dp),
-                color = tagBg
-            ) {
-                Text(
-                    text = tag,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = tagColor
-                )
-            }
         }
     }
 }

@@ -34,7 +34,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -171,15 +170,15 @@ private fun FlashcardHeader(
                 )
             }
 
-            LinearProgressIndicator(
-                progress = { if (total > 0) (progress + 1).toFloat() / total else 0f },
+            Text(
+                text = "$progress/$total",
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 12.dp)
-                    .height(12.dp)
-                    .clip(RoundedCornerShape(99.dp)),
-                color = FlashSecondary,
-                trackColor = FlashSurfaceContainerHighest
+                    .padding(horizontal = 12.dp),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = FlashOnSurfaceVariant
             )
 
             Icon(

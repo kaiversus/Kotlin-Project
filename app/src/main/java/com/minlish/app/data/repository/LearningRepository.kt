@@ -109,7 +109,7 @@ class LearningRepository {
             lastGrade = grade.toLong(),
             totalReviews = record.totalReviews + 1L,
             correctReviews = if (grade >= 2) record.correctReviews + 1L else record.correctReviews,
-            firstLearnedAt = record.firstLearnedAt ?: now,
+            firstLearnedAt = record.firstLearnedAt ?: if (grade >= 1) now else null,
             lastReviewedAt = now
         )
     }
@@ -232,9 +232,9 @@ class LearningRepository {
         if (todayReviewOnly) {
             return StudySessionWords(words = todayWords, isTodayReview = true)
         }
-        val dailyWords = getDailyPlanStudyWords(userId, allWords, dailyTarget, startOfDay, endOfDay).shuffled()
-        if (dailyWords.isNotEmpty()) {
-            return StudySessionWords(words = dailyWords, isTodayReview = false)
+        val reviewWords = getDailyPlanReviewWords(userId, allWords, endOfDay).shuffled()
+        if (reviewWords.isNotEmpty()) {
+            return StudySessionWords(words = reviewWords, isTodayReview = false)
         }
         return StudySessionWords(
             words = todayWords,

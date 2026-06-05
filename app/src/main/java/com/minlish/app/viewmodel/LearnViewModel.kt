@@ -32,6 +32,7 @@ data class LearnUiState(
     val listLoading: Boolean = false,
     val plannedNewWords: List<Word> = emptyList(),
     val plannedReviewWords: List<Word> = emptyList(),
+    val reviewDueWords: List<Word> = emptyList(),
     val completedNewWords: List<Word> = emptyList(),
     val completedReviewWords: List<Word> = emptyList()
 )
@@ -63,6 +64,9 @@ class LearnViewModel : ViewModel() {
                 val balanced = learningRepo.getBalancedDailyPlan(
                     userId, allWords, dailyTarget, startOfDay, endOfDay
                 )
+                val reviewDueWords = learningRepo.getDailyPlanReviewWords(
+                    userId, allWords, endOfDay
+                )
                 val completedNewWords = learningRepo.getCompletedNewWordsToday(
                     userId, allWords, startOfDay, endOfDay
                 )
@@ -81,6 +85,7 @@ class LearnViewModel : ViewModel() {
                     progress = progress,
                     plannedNewWords = balanced.plannedNew,
                     plannedReviewWords = balanced.plannedReview,
+                    reviewDueWords = reviewDueWords,
                     completedNewWords = completedNewWords,
                     completedReviewWords = completedReviewWords
                 )
@@ -97,7 +102,7 @@ class LearnViewModel : ViewModel() {
         val state = _uiState.value
         val words = when (type) {
             DailyPlanListType.NEW -> state.plannedNewWords
-            DailyPlanListType.REVIEW -> state.plannedReviewWords
+            DailyPlanListType.REVIEW -> state.reviewDueWords
         }
         _uiState.value = state.copy(
             activeList = type,
